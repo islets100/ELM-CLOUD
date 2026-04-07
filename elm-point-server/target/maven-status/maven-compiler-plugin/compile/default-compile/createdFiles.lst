@@ -1,0 +1,7 @@
+team\tjusw\elm\Application.class
+team\tjusw\elm\controller\PointController.class
+team\tjusw\elm\po\CommonResult.class
+team\tjusw\elm\po\Point.class
+team\tjusw\elm\mapper\PointMapper.class
+team\tjusw\elm\service\PointService.class
+team\tjusw\elm\service\impl\PointServiceImpl.class

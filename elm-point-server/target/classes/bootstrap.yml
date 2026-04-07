@@ -1,0 +1,32 @@
+spring:
+  cloud:
+    config:
+      name: elm-point-server-1
+      profile: dev
+      label: elm-configs
+      discovery:
+        enabled: true
+        service-id: elm-config-server
+      uri: http://localhost:15001
+    bus:
+      enabled: true
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+server:
+  port: 15008
+
+# 服务注册与发现
+# eurekahost1和eurekahost2是在hosts文件中配置的两个节点的ip地址
+eurekahost1: 127.0.0.1
+eurekahost2: 127.0.0.1
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${eurekahost1}:13000/eureka/,http://${eurekahost2}:13000/eureka/
+  instance:
+    instance-id: ${spring.cloud.client.ip-address}:${server.port}
+    prefer-ip-address: true

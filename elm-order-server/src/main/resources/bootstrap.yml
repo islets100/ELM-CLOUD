@@ -6,14 +6,15 @@ spring:
       name: elm-order-server-1
       profile: dev
       label: elm-configs
+      uri: http://localhost:15001
       discovery:
         enabled: true
         service-id: elm-config-server
   main:
     allow-bean-definition-overriding: true
  
-eurekahost1: x.x.x.x # 换成部署了该eureka server的主机的公网IP
-eurekahost2: x.x.x.x #  换成部署了该eureka server的主机的公网IP
+eurekahost1: 127.0.0.1 # 换成部署了该eureka server的主机的公网IP
+eurekahost2: 127.0.0.1 #  换成部署了该eureka server的主机的公网IP
 
   
 eureka:

@@ -99,39 +99,54 @@ public class OrdersServiceImpl implements OrdersService {
 	 private RedissonConfig  redissonConfig;
 	 
 	 public Integer payByVirtualWallet(String userId, Integer orderId, int pointAmount) {
-		    // 使用Redis分布式锁
-		    RLock orderLock = redissonConfig.redissonClient.getLock("order-" + orderId);
-		    orderLock.lock(redissonConfig.timeout, TimeUnit.MILLISECONDS); // 设置锁的过期时间为10秒
-		    try {
-		        Orders order = ordersMapper.getOrdersById(orderId);
-		        if (order.getOrderState() == 1)
-		            return 3;
-		        String businessUserId = (String) ((LinkedHashMap<?, ?>) businessClient
-		                .getBusinessById(order.getBusinessId()).getResult()).get("userId");
-
-		        BigDecimal fromBalance = virtualWalletClient.getBalanceByUserId(userId).getResult();
-		        Integer pointBalance = pointClient.getBalanceByUserId(userId).getResult();
-
-		        if (fromBalance.compareTo(order.getOrderTotal()) < 0)
-		            return 1;
-		        if (pointBalance < pointAmount)
-		            return 2;
-
-		        int ret = 1;
-
-		        // test
-		        BigDecimal deductedAmount = pointClient.getDeductedAmount(orderId, pointAmount).getResult();
-
-		        BigDecimal amount = order.getOrderTotal().subtract(deductedAmount);
-
-		        if (virtualWalletClient.transfer(userId, businessUserId, amount).getCode() != 200)
-		            return 0;
-		        pointClient.earnPointByOrder(orderId);
-		        ordersMapper.finishOrder(orderId);
-		        pointClient.deductOrder(orderId, pointAmount);
-		        return ret > 0 ? 200 : 0;
-		    } finally {
-		        orderLock.unlock();
+		    // 获取锁对象
+		    Object lockObject = orderLocks.computeIfAbsent(orderId, k -> new Object());
+		    
+		    // 使用Redis分布式锁或本地锁
+		    if (redissonConfig.redissonClient != null) {
+		        // 使用Redis分布式锁
+		        RLock orderLock = redissonConfig.redissonClient.getLock("order-" + orderId);
+		        orderLock.lock(redissonConfig.timeout, TimeUnit.MILLISECONDS); // 设置锁的过期时间为10秒
+		        try {
+		            return processPayment(userId, orderId, pointAmount);
+		        } finally {
+		            orderLock.unlock();
+		        }
+		    } else {
+		        // 使用本地锁
+		        synchronized (lockObject) {
+		            return processPayment(userId, orderId, pointAmount);
+		        }
 		    }
+		}
+		
+		private Integer processPayment(String userId, Integer orderId, int pointAmount) {
+		    Orders order = ordersMapper.getOrdersById(orderId);
+		    if (order.getOrderState() == 1)
+		        return 3;
+		    String businessUserId = (String) ((LinkedHashMap<?, ?>) businessClient
+		            .getBusinessById(order.getBusinessId()).getResult()).get("userId");
+
+		    BigDecimal fromBalance = virtualWalletClient.getBalanceByUserId(userId).getResult();
+		    Integer pointBalance = pointClient.getBalanceByUserId(userId).getResult();
+
+		    if (fromBalance.compareTo(order.getOrderTotal()) < 0)
+		        return 1;
+		    if (pointBalance < pointAmount)
+		        return 2;
+
+		    int ret = 1;
+
+		    // test
+		    BigDecimal deductedAmount = pointClient.getDeductedAmount(orderId, pointAmount).getResult();
+
+		    BigDecimal amount = order.getOrderTotal().subtract(deductedAmount);
+
+		    if (virtualWalletClient.transfer(userId, businessUserId, amount).getCode() != 200)
+		        return 0;
+		    pointClient.earnPointByOrder(orderId);
+		    ordersMapper.finishOrder(orderId);
+		    pointClient.deductOrder(orderId, pointAmount);
+		    return ret > 0 ? 200 : 0;
 		}
 }

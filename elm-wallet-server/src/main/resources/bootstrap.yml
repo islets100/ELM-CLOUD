@@ -1,43 +1,55 @@
-server:
-  port: 10800
 spring:
   cloud:
     config:
-      name: elm-wallet-server-1
-      profile: dev
-      label: elm-configs
+      name: elm-wallet-server
+      profile: 1-dev
+      label: master
       discovery:
         enabled: true
         service-id: elm-config-server
-       
+    bus:
+      enabled: true
+      trace:
+        enabled: true
+  # rabbitmq
+  # rabbitmq:
+  #   host: 192.168.127.131
+  #   port: 5672
+  #   username: admin
+  #   password: 123456
 
+# Redis 配置
+redisClientConfig:
+  host: localhost
+  port: 6379
+  timeout: 10000
 
-eurekahost1: x.x.x.x # 换成部署了该eureka server的主机的公网IP
-eurekahost2: x.x.x.x #  换成部署了该eureka server的主机的公网IP
+# eureka
+# eureka.instance.prefer-ip-address=true 表示将自己的ip地址注册到Eureka服务中
+# eureka.instance.ip-address=127.0.0.1 表示注册到Eureka服务中的ip地址
+# eureka.client.service-url.defaultZone 表示注册到的Eureka服务地址
+# eureka.client.fetch-registry=true 表示是否从Eureka服务中获取注册信息
+# eureka.client.register-with-eureka=true 表示是否将自己注册到Eureka服务中
 
-  
+# 这里的eurekahost1和eurekahost2是在hosts文件中配置的Eureka服务地址
+# 在本地开发时，需要在hosts文件中添加以下配置：
+# 127.0.0.1 eurekahost1
+# 127.0.0.1 eurekahost2
+
+# 注意：如果是在生产环境中，需要将eurekahost1和eurekahost2替换为实际的Eureka服务地址
+
+# 注意：如果是在本地开发时，需要将eureka.client.service-url.defaultZone配置为http://localhost:13000/eureka/
+
+# 注意：如果是在本地开发时，需要将eureka.instance.ip-address配置为127.0.0.1
+
+# 注意：如果是在本地开发时，需要将eureka.instance.prefer-ip-address配置为true
+
 eureka:
+  instance:
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
   client:
     service-url:
-      defaultZone: http://${eurekahost1}:13000/eureka/,http://${eurekahost2}:13000/eureka/
-      # defaultZone: http://localhost:13000/eureka/
-
-  instance:
-    # 上线后使用这个配置
-#    prefer-ip-address: false
-#    ip-address: x.x.x.x  # 换成本机的公网IP
-#    instance-id: ${eureka.instance.ip-address}:${server.port}
-#    hostname: ${eureka.instance.ip-address}
-#    lease-renewal-interval-in-seconds: 5
-#    lease-expiration-duration-in-seconds: 15
-    # 上线前使用这个配置
-    prefer-ip-address: true
-    instance-id: ${spring.cloud.client.ip-address}:${server.port}
-    lease-renewal-interval-in-seconds: 5
-    lease-expiration-duration-in-seconds: 15
-    
-    
-
-
-
-
+      defaultZone: http://localhost:13000/eureka/
+    fetch-registry: true
+    register-with-eureka: true

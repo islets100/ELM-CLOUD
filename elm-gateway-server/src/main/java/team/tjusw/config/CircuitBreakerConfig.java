@@ -14,11 +14,8 @@ public class CircuitBreakerConfig {
 	
 	
     @Bean
-    public ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory(
-            CircuitBreakerRegistry circuitBreakerRegistry,
-            TimeLimiterRegistry timeLimiterRegistry) {
-        ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory = new ReactiveResilience4JCircuitBreakerFactory(circuitBreakerRegistry, timeLimiterRegistry);
-        reactiveResilience4JCircuitBreakerFactory.configureCircuitBreakerRegistry(circuitBreakerRegistry);
+    public ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory() {
+        ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory = new ReactiveResilience4JCircuitBreakerFactory();
         TimeLimiterConfig timeLimiterConfig = TimeLimiterConfig.custom()
                 .timeoutDuration(Duration.ofSeconds(20)).cancelRunningFuture(true)
                 .build();

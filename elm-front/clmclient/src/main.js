@@ -15,7 +15,7 @@ import {
 } from './common.js'
 Vue.config.productionTip = false 
 //设置axios的基础url部分
-axios.defaults.baseURL = 'http://x.x.x.x:14000/';    //x.x.x.x 换成部署了网关服务器的主机的公网IP
+axios.defaults.baseURL = 'http://localhost:14000/';    //x.x.x.x 换成部署了网关服务器的主机的公网IP
 //将axios挂载到vue实例上，使用时就可以 this.$axios 这样使用了
 Vue.prototype.$axios = axios;
 Vue.prototype.$qs = qs; 
