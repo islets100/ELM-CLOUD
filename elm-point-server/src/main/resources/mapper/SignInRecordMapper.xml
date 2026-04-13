@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="team.tjusw.elm.mapper.SignInRecordMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="SignInRecordResultMap" type="team.tjusw.elm.po.SignInRecord">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="signDate" column="sign_date"/>
+        <result property="consecutiveDays" column="consecutive_days"/>
+        <result property="pointsAwarded" column="points_awarded"/>
+    </resultMap>
+
+    <!-- 插入签到记录 -->
+    <insert id="insert" parameterType="team.tjusw.elm.po.SignInRecord" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sign_in_records (user_id, sign_date, consecutive_days, points_awarded)
+        VALUES (#{userId}, #{signDate}, #{consecutiveDays}, #{pointsAwarded})
+    </insert>
+
+    <!-- 根据用户ID查询最近一次签到记录 -->
+    <select id="findTopByUserIdOrderBySignDateDesc" parameterType="long" resultMap="SignInRecordResultMap">
+        SELECT * FROM sign_in_records
+        WHERE user_id = #{userId}
+        ORDER BY sign_date DESC
+        LIMIT 1
+    </select>
+
+    <!-- 查询用户今天的签到记录 -->
+    <select id="findTodaySignIn" resultMap="SignInRecordResultMap">
+        SELECT * FROM sign_in_records
+        WHERE user_id = #{userId}
+          AND sign_date = #{signDate}
+    </select>
+
+</mapper>

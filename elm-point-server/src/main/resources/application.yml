@@ -9,3 +9,6 @@ spring:
 
 mybatis:
   type-aliases-package: team.tjusw.elm.po
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true

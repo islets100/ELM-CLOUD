@@ -1,12 +1,8 @@
 package team.tjusw.elm.controller;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +13,6 @@ import javax.servlet.http.HttpServletRequest;
 import team.tjusw.elm.po.CommonResult;
 import team.tjusw.elm.po.User;
 import team.tjusw.elm.service.UserService;
-import team.tjusw.elm.util.BasicAuth;
 
 //@CrossOrigin("*") 
 @RestController
