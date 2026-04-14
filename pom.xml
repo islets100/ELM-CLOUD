@@ -45,6 +45,8 @@
         <module>elm-food-server</module>
         <module>elm-order-server</module>
         <module>elm-point-server</module>
+        <module>elm-user-server</module>
+        <module>elm-wallet-server</module>
     </modules>
 
     <build>

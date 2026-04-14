@@ -33,6 +33,16 @@ spring:
             name: userCircuitBreaker
             fallbackUri: forward:/userFallback
 
+      - id: userApiServer
+        uri: lb://elm-user-server
+        predicates:
+        - Path=/api/auth,/api/register,/api/user,/api/users/**,/api/persons,/api/password,/api/userById,/api/userByIdByPass,/api/userByUsername,/api/userExistsByUsername,/api/user/birthday/modification/check
+        filters:
+        - name: CircuitBreaker
+          args:
+            name: userCircuitBreaker
+            fallbackUri: forward:/userFallback
+
       - id: businessServer
         uri: lb://elm-business-server
         predicates:
