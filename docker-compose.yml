@@ -23,6 +23,23 @@ services:
       timeout: 5s
       retries: 20
 
+  mysql-init:
+    image: mysql:8.0.36
+    container_name: elm-mysql-init
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: "no"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - ./docker/mysql/init:/init:ro
+    command:
+      - sh
+      - -c
+      - mysql -hmysql -uroot -p"$${MYSQL_ROOT_PASSWORD}" --protocol=TCP < /init/01-create-tables-if-not-exists.sql
+
   redis:
     image: redis:6.2.14
     container_name: elm-redis
