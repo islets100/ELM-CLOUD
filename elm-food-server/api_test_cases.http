@@ -1,5 +1,5 @@
 ﻿### 钱包服务 (Wallet Server)
-@wallet_host = http://localhost:8088
+@wallet_host = http://localhost:18000
 
 ###
 # @name 1_getBalance_ShouldAutoCreate
@@ -41,7 +41,7 @@ GET {{wallet_host}}/wallet/getVirtualWallet?userId=user123
 
 ### ======================================== ###
 ### 餐饮服务 (Food Server)
-@food_host = http://localhost:8082
+@food_host = http://localhost:10200
 
 ###
 # @name 7_addFood_ShouldVerifyBusiness

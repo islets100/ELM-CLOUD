@@ -9,7 +9,7 @@ spring:
     config:
       server:
         native:
-          search-locations: file:///e:/CourseData/software_advanced_practice/ELM-CLOUD/elm-configs
+          search-locations: file:///f:/ELM/elm-configs
 #  rabbitmq:
 ##    host: 8.130.64.168
 #    addresses: 8.130.64.168:5672
