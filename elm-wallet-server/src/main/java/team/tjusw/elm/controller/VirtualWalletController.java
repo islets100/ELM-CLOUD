@@ -1,36 +1,44 @@
 package team.tjusw.elm.controller;
-
-import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import team.tjusw.elm.po.CommonResult;
+import org.springframework.web.bind.annotation.*;
+import java.math.BigDecimal;
 import team.tjusw.elm.service.VirtualWalletService;
+import team.tjusw.elm.po.CommonResult;
+import team.tjusw.elm.po.VirtualWalletPO;
 
 @RestController
 @RequestMapping("/wallet")
 public class VirtualWalletController {
-	
-	@Autowired
-	private VirtualWalletService virtualWalletService;
-	
-	@RequestMapping(value = "/getBalance", method = RequestMethod.GET)
-	public CommonResult<BigDecimal> getBalanceByUserId(@RequestParam String userId) {
-		BigDecimal balance = virtualWalletService.getBalanceByUserId(userId);
-		return new CommonResult<>(200, "success", balance);
-	}
-	
-	@RequestMapping(value = "/transfer", method = RequestMethod.POST)
-	public CommonResult<Integer> transfer(@RequestParam String fromUserId, @RequestParam String toUserId, @RequestParam BigDecimal amount) {
-		int result = virtualWalletService.transfer(fromUserId, toUserId, amount);
-		return new CommonResult<>(200, "success", result);
-	}
-	
-	// 熔断降级处理
-	@RequestMapping("/walletFallback")
-	public CommonResult<String> walletFallback() {
-		return new CommonResult<>(500, "wallet service fallback", null);
-	}
+
+    @Autowired
+    private VirtualWalletService walletService;
+
+    @GetMapping("/getBalance")
+    public CommonResult<BigDecimal> getBalance(@RequestParam("userId") String userId) {
+        return new CommonResult<>(200, "success", walletService.getBalance(userId));
+    }
+
+    @PostMapping("/recharge")
+    public CommonResult<Boolean> recharge(@RequestParam("userId") String userId, @RequestParam("amount") BigDecimal amount) {
+        return new CommonResult<>(200, "success", walletService.recharge(userId, amount));
+    }
+
+    @PostMapping("/pay")
+    public CommonResult<Boolean> pay(@RequestParam("userId") String userId, @RequestParam("amount") BigDecimal amount) {
+        try {
+            return new CommonResult<>(200, "success", walletService.pay(userId, amount));
+        } catch(Exception e) {
+            return new CommonResult<>(500, e.getMessage(), false);
+        }
+    }
+
+    @PostMapping("/repayOverdraft")
+    public CommonResult<Boolean> repayOverdraft(@RequestParam("userId") String userId, @RequestParam("amount") BigDecimal amount) {
+        return new CommonResult<>(200, "success", walletService.repayOverdraft(userId, amount));
+    }
+
+    @GetMapping("/getVirtualWallet")
+    public CommonResult<VirtualWalletPO> getVirtualWallet(@RequestParam("userId") String userId) {
+        return new CommonResult<>(200, "success", walletService.getVirtualWallet(userId));
+    }
 }

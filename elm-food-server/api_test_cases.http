@@ -1,0 +1,56 @@
+﻿### 钱包服务 (Wallet Server)
+@wallet_host = http://localhost:8088
+
+###
+# @name 1_getBalance_ShouldAutoCreate
+GET {{wallet_host}}/wallet/getBalance?userId=user123
+Accept: application/json
+
+###
+# @name 2_recharge_ShouldAddBalance
+POST {{wallet_host}}/wallet/recharge
+Content-Type: application/x-www-form-urlencoded
+
+userId=user123&amount=100.00
+
+###
+# @name 3_purchaseVip_ShouldDeductWithOverdraft
+POST {{wallet_host}}/vip/purchase
+Content-Type: application/x-www-form-urlencoded
+
+userId=user123&cardType=PREMIUM
+
+###
+# @name 4_pay_ShouldFailInsufficientCredit
+POST {{wallet_host}}/wallet/pay
+Content-Type: application/x-www-form-urlencoded
+
+userId=user123&amount=5000.00
+
+###
+# @name 5_repayOverdraft_ShouldClearDebt
+POST {{wallet_host}}/wallet/repayOverdraft
+Content-Type: application/x-www-form-urlencoded
+
+userId=user123&amount=200.00
+
+###
+# @name 6_getWalletInfo_VerifyRecovery
+GET {{wallet_host}}/wallet/getVirtualWallet?userId=user123
+
+
+### ======================================== ###
+### 餐饮服务 (Food Server)
+@food_host = http://localhost:8082
+
+###
+# @name 7_addFood_ShouldVerifyBusiness
+POST {{food_host}}/food/add
+Content-Type: application/x-www-form-urlencoded
+
+businessId=10001&foodName=测试汉堡&price=25.00&valid=1
+
+###
+# @name 8_getFoodList
+GET {{food_host}}/food/list?businessId=10001
+
