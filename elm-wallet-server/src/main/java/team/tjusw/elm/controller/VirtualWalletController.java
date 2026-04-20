@@ -1,4 +1,5 @@
 package team.tjusw.elm.controller;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
@@ -19,7 +20,8 @@ public class VirtualWalletController {
     }
 
     @PostMapping("/recharge")
-    public CommonResult<Boolean> recharge(@RequestParam("userId") String userId, @RequestParam("amount") BigDecimal amount) {
+    public CommonResult<Boolean> recharge(@RequestParam("userId") String userId,
+            @RequestParam("amount") BigDecimal amount) {
         return new CommonResult<>(200, "success", walletService.recharge(userId, amount));
     }
 
@@ -27,13 +29,14 @@ public class VirtualWalletController {
     public CommonResult<Boolean> pay(@RequestParam("userId") String userId, @RequestParam("amount") BigDecimal amount) {
         try {
             return new CommonResult<>(200, "success", walletService.pay(userId, amount));
-        } catch(Exception e) {
+        } catch (Exception e) {
             return new CommonResult<>(500, e.getMessage(), false);
         }
     }
 
     @PostMapping("/repayOverdraft")
-    public CommonResult<Boolean> repayOverdraft(@RequestParam("userId") String userId, @RequestParam("amount") BigDecimal amount) {
+    public CommonResult<Boolean> repayOverdraft(@RequestParam("userId") String userId,
+            @RequestParam("amount") BigDecimal amount) {
         return new CommonResult<>(200, "success", walletService.repayOverdraft(userId, amount));
     }
 
