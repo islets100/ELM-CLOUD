@@ -90,13 +90,13 @@
 		async created(){
 			this.user = this.$getSessionStorage('user');
 			
-			this.$axios.get(`virtual-wallets/user/${this.user.userId}/balance`).then(response => {
+			this.$axios.get(`wallet/getBalance?userId=${this.user.userId}`).then(response => {
 				this.balance = response.data.result;
 			}).catch(error => {
 				console.error(error);
 			});
 			
-			this.$axios.get(`points/user/${this.user.userId}/balance`).then(response => {
+			this.$axios.get(`points/balance/${this.user.userId}`).then(response => {
 				this.credit = response.data.result;
 			}).catch(error => {
 				console.error(error);

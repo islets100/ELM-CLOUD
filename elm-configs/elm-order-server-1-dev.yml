@@ -19,7 +19,7 @@ spring:
         
 mybatis:
   mapper-locations: classpath:mapper/*.xml
-  type-aliases-package: team.tjusw.po
+  type-aliases-package: team.tjusw.elm.po
 
 redisClientConfig:
   host: ${REDIS_HOST:localhost}
