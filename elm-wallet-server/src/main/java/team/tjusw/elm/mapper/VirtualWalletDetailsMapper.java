@@ -9,13 +9,12 @@ import team.tjusw.elm.po.VirtualWalletDetailsPO;
 
 @Mapper
 public interface VirtualWalletDetailsMapper {
-	
-	
-	 @Select("select * from virtualWalletDetails where fromWalletId = #{walletId} or toWalletId = #{wakketId}")
-	 public List<VirtualWalletDetailsPO>getDetailsByWalletId(Integer walletId);
-	
-	 @Insert("insert into VirtualWalletDetails(time,amount,type,fromWalletId,toWalletId) values(#{time},#{amount},"
-	 		+ "#{type},#{fromWalletId},#{toWalletId})")
-	 public Integer saveDetailsToDB(VirtualWalletDetailsPO po);
-	 
+
+	@Select("select * from VirtualWalletDetails where fromWalletId = #{walletId} or toWalletId = #{walletId}")
+	public List<VirtualWalletDetailsPO> getDetailsByWalletId(Integer walletId);
+
+	@Insert("insert into VirtualWalletDetails(time,amount,type,fromWalletId,toWalletId) values(#{time},#{amount},"
+			+ "#{type},#{fromWalletId},#{toWalletId})")
+	public Integer saveDetailsToDB(VirtualWalletDetailsPO po);
+
 }

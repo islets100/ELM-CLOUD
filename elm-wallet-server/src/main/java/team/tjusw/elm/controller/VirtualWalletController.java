@@ -41,4 +41,12 @@ public class VirtualWalletController {
     public CommonResult<VirtualWalletPO> getVirtualWallet(@RequestParam("userId") String userId) {
         return new CommonResult<>(200, "success", walletService.getVirtualWallet(userId));
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public CommonResult<?> handleIllegalArgumentException(IllegalArgumentException e) {
+        if ("The user does not exist".equals(e.getMessage())) {
+            return new CommonResult<>(404, "The user does not exist", null);
+        }
+        return new CommonResult<>(500, e.getMessage(), null);
+    }
 }

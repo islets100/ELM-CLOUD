@@ -1,4 +1,5 @@
 package team.tjusw.elm.service.impl;
+
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +25,10 @@ public class VirtualWalletServiceImpl implements VirtualWalletService {
     private VirtualWalletPO getOrCreateWallet(String userId) {
         VirtualWalletPO wallet = virtualWalletMapper.selectByUserId(userId);
         if (wallet == null) {
-            userClient.validateUser(userId);
+            team.tjusw.elm.po.CommonResult<Integer> userRes = userClient.validateUser(userId);
+            if (userRes.getCode() != 200) {
+                throw new IllegalArgumentException("The user does not exist");
+            }
             wallet = new VirtualWalletPO();
             wallet.setUserId(userId);
             wallet.setBalance(BigDecimal.ZERO);
@@ -49,7 +53,8 @@ public class VirtualWalletServiceImpl implements VirtualWalletService {
     @Override
     @Transactional
     public boolean recharge(String userId, BigDecimal amount) {
-        if(amount.compareTo(BigDecimal.ZERO) <= 0) return false;
+        if (amount.compareTo(BigDecimal.ZERO) <= 0)
+            return false;
         VirtualWalletPO wallet = getOrCreateWallet(userId);
         wallet.setBalance(wallet.getBalance().add(amount));
         virtualWalletMapper.updateWallet(wallet);
@@ -61,7 +66,7 @@ public class VirtualWalletServiceImpl implements VirtualWalletService {
     public boolean pay(String userId, BigDecimal amount) {
         VirtualWalletPO wallet = getOrCreateWallet(userId);
         BigDecimal currentBalance = wallet.getBalance();
-        
+
         if (currentBalance.compareTo(amount) >= 0) {
             wallet.setBalance(currentBalance.subtract(amount));
             virtualWalletMapper.updateWallet(wallet);
@@ -73,7 +78,7 @@ public class VirtualWalletServiceImpl implements VirtualWalletService {
                 wallet.setBalance(BigDecimal.ZERO);
                 wallet.setUsedCreditLimit(wallet.getUsedCreditLimit().add(missing));
                 wallet.setLastInterestTime(String.valueOf(System.currentTimeMillis()));
-                
+
                 OverdraftRecordPO record = new OverdraftRecordPO();
                 record.setWalletId(wallet.getWalletId());
                 record.setAmount(missing);
@@ -81,7 +86,7 @@ public class VirtualWalletServiceImpl implements VirtualWalletService {
                 record.setInterest(BigDecimal.ZERO);
                 record.setStatus(0);
                 overdraftRecordMapper.insert(record);
-                
+
                 virtualWalletMapper.updateWallet(wallet);
                 return true;
             }
@@ -93,13 +98,15 @@ public class VirtualWalletServiceImpl implements VirtualWalletService {
     @Transactional
     public boolean repayOverdraft(String userId, BigDecimal amount) {
         VirtualWalletPO wallet = virtualWalletMapper.selectByUserId(userId);
-        if (wallet == null) return false;
-        
+        if (wallet == null)
+            return false;
+
         List<OverdraftRecordPO> unpaid = overdraftRecordMapper.selectUnpaidByWalletId(wallet.getWalletId());
         BigDecimal remaining = amount;
-        
+
         for (OverdraftRecordPO record : unpaid) {
-            if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0)
+                break;
             BigDecimal debt = record.getAmount().subtract(record.getRepaidAmount()).add(record.getInterest());
             if (remaining.compareTo(debt) >= 0) {
                 remaining = remaining.subtract(debt);
@@ -113,7 +120,7 @@ public class VirtualWalletServiceImpl implements VirtualWalletService {
             }
             overdraftRecordMapper.update(record);
         }
-        
+
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
             wallet.setBalance(wallet.getBalance().add(remaining));
         }
