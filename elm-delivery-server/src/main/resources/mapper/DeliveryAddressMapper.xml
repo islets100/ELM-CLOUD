@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="team.tjusw.elm.mapper.DeliveryAddressMapper">
+	<update id="updateDeliveryAddress" parameterType="team.tjusw.elm.po.DeliveryAddress">
+		update deliveryAddress set valid = 0 where daId = #{daId}
+	</update>
+	<insert id="saveDeliveryAddress" parameterType="team.tjusw.elm.po.DeliveryAddress">
+		insert into deliveryAddress values(null,#{contactName},#{contactSex},#{contactTel},#{address},#{userId},1)
+	</insert>
+</mapper>
