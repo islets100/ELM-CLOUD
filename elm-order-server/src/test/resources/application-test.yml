@@ -1,0 +1,38 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+  application:
+    name: elm-order-server-test
+  datasource:
+    url: jdbc:h2:mem:orderdb;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  autoconfigure:
+    exclude:
+      - org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration
+      - org.springframework.cloud.config.client.ConfigClientAutoConfiguration
+      - org.springframework.cloud.client.discovery.composite.CompositeDiscoveryClientAutoConfiguration
+
+mybatis:
+  type-aliases-package: team.tjusw.elm.po
+  mapper-locations: classpath:mapper/*.xml
+
+redisClientConfig:
+  host: localhost
+  port: 6379
+  timeout: 1000
+
+logging:
+  level:
+    team.tjusw.elm.mapper: DEBUG
+    org.springframework.test: INFO
+    com.netflix.discovery: OFF
+    org.springframework.cloud: OFF
+
+eureka:
+  client:
+    enabled: false

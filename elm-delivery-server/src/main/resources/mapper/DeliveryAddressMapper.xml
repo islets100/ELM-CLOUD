@@ -5,7 +5,4 @@
 	<update id="updateDeliveryAddress" parameterType="team.tjusw.elm.po.DeliveryAddress">
 		update deliveryAddress set valid = 0 where daId = #{daId}
 	</update>
-	<insert id="saveDeliveryAddress" parameterType="team.tjusw.elm.po.DeliveryAddress">
-		insert into deliveryAddress values(null,#{contactName},#{contactSex},#{contactTel},#{address},#{userId},1)
-	</insert>
 </mapper>
