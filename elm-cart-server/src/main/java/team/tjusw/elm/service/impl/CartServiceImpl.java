@@ -19,7 +19,23 @@ public class CartServiceImpl implements CartService {
 	
 	@Override
 	public int saveCart(Cart cart) {
-		return cartMapper.saveCart(cart);
+		// 先检查是否已存在
+		Cart queryCart = new Cart();
+		queryCart.setUserId(cart.getUserId());
+		queryCart.setBusinessId(cart.getBusinessId());
+		queryCart.setFoodId(cart.getFoodId());
+		
+		List<Cart> existingCarts = cartMapper.listCart(queryCart);
+		
+		if (existingCarts != null && !existingCarts.isEmpty()) {
+			// 已存在，更新数量
+			Cart existingCart = existingCarts.get(0);
+			existingCart.setQuantity(existingCart.getQuantity() + cart.getQuantity());
+			return cartMapper.updateCart(existingCart);
+		} else {
+			// 不存在，插入新记录
+			return cartMapper.insertCart(cart);
+		}
 	}
 	
 

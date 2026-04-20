@@ -1,27 +1,19 @@
 package team.tjusw.elm.mapper;
 
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
-
+import org.apache.ibatis.annotations.*;
 import team.tjusw.elm.po.VirtualWalletPO;
-
 
 @Mapper
 public interface VirtualWalletMapper {
-	
-	 @Select("select * from VirtualWallet where userId=#{userId}")
-	 public VirtualWalletPO getVirtualWalletByUserId(String userId);
-	 
-	 @Insert("insert into VirtualWallet(createTime,userId) values(#{createTime},#{userId})")
-	 public int createVirtualWallet(VirtualWalletPO po);
-	 
-	 @Update("update VirtualWallet set balance = #{balance} where walletId = #{walletId}")
-	 public int updateBalance(VirtualWalletPO po);
-	 
-	 @Select("select count(*) from user where userId=#{userId}")
-	 public int getUserById(String userId);
-	 
-	 
+    @Select("SELECT walletId, userId, balance, creditLimit, usedCreditLimit, lastInterestTime, createTime FROM VirtualWallet WHERE userId = #{userId}")
+    VirtualWalletPO selectByUserId(@Param("userId") String userId);
+
+    @Select("SELECT walletId, userId, balance, creditLimit, usedCreditLimit, lastInterestTime, createTime FROM VirtualWallet WHERE walletId = #{walletId}")
+    VirtualWalletPO selectById(@Param("walletId") Integer walletId);
+
+    @Insert("INSERT INTO VirtualWallet (userId, balance, creditLimit, usedCreditLimit) VALUES (#{userId}, #{balance}, #{creditLimit}, #{usedCreditLimit})")
+    int insert(VirtualWalletPO wallet);
+
+    @Update("UPDATE VirtualWallet SET balance = #{balance}, creditLimit = #{creditLimit}, usedCreditLimit = #{usedCreditLimit}, lastInterestTime = #{lastInterestTime} WHERE walletId = #{walletId}")
+    int updateWallet(VirtualWalletPO wallet);
 }

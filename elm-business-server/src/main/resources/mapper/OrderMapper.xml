@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="team.tjusw.elm.mapper.OrderMapper">
+	<resultMap type="team.tjusw.elm.po.Order" id="orderResultMap">
+		<id column="orderId" property="orderId" />
+		<result column="userId" property="userId" />
+		<result column="businessId" property="businessId" />
+		<result column="daId" property="daId" />
+		<result column="orderTotal" property="orderTotal" />
+		<result column="orderState" property="orderState" />
+		<result column="orderTime" property="orderTime" />
+		<result column="payTime" property="payTime" />
+		<result column="deliveryTime" property="deliveryTime" />
+		<result column="checkoutTime" property="checkoutTime" />
+	</resultMap>
+
+	<resultMap type="team.tjusw.elm.po.OrderDetail" id="orderDetailResultMap">
+		<id column="odId" property="odId" />
+		<result column="orderId" property="orderId" />
+		<result column="foodId" property="foodId" />
+		<result column="quantity" property="quantity" />
+		<result column="foodPrice" property="foodPrice" />
+	</resultMap>
+
+	<insert id="saveOrder" parameterType="team.tjusw.elm.po.Order" useGeneratedKeys="true" keyProperty="orderId">
+		insert into `order` (userId, businessId, daId, orderTotal, orderState, orderTime)
+		values (#{userId}, #{businessId}, #{daId}, #{orderTotal}, #{orderState}, #{orderTime})
+	</insert>
+
+	<insert id="saveOrderDetail" parameterType="team.tjusw.elm.po.OrderDetail">
+		insert into orderDetail (orderId, foodId, quantity, foodPrice)
+		values (#{orderId}, #{foodId}, #{quantity}, #{foodPrice})
+	</insert>
+
+	<update id="updateOrderStatus" parameterType="team.tjusw.elm.po.Order">
+		update `order` set orderState=#{orderState} where orderId=#{orderId}
+	</update>
+
+	<update id="updateOrderPayTime" parameterType="team.tjusw.elm.po.Order">
+		update `order` set orderState=#{orderState}, payTime=#{payTime} where orderId=#{orderId}
+	</update>
+
+	<update id="updateOrderDeliveryTime" parameterType="team.tjusw.elm.po.Order">
+		update `order` set orderState=#{orderState}, deliveryTime=#{deliveryTime} where orderId=#{orderId}
+	</update>
+
+	<update id="updateOrderCheckoutTime" parameterType="team.tjusw.elm.po.Order">
+		update `order` set orderState=#{orderState}, checkoutTime=#{checkoutTime} where orderId=#{orderId}
+	</update>
+</mapper>
