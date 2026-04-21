@@ -112,7 +112,7 @@ spring:
       - id: walletServer
         uri: lb://elm-wallet-server
         predicates:
-        -  Path=/virtual-wallets/**
+        -  Path=/wallet/**
         filters:
         - name: CircuitBreaker
           args:
