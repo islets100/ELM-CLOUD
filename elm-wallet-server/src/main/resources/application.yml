@@ -1,5 +1,28 @@
 spring:
   application:
     name: elm-wallet-server
+  cloud:
+    config:
+      enabled: false
+  datasource:
+    url: jdbc:mysql://localhost:3306/elm?useSSL=false&serverTimezone=UTC
+    username: root
+    password: Yb091864
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
 server:
   port: 18000
+
+mybatis:
+  type-aliases-package: team.tjusw.elm.po
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:13000/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.cloud.client.ip-address}:${server.port}

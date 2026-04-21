@@ -4,9 +4,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 
 import team.tjusw.elm.mapper.UserMapper;
+import team.tjusw.elm.po.Authority;
 import team.tjusw.elm.po.User;
 import team.tjusw.elm.service.UserService;
 
@@ -62,7 +64,18 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public User getUser(String userId) {
-		return userMapper.getUserById(userId);
+		User user = userMapper.getUserById(userId);
+		if (user != null) {
+			// Set authority based on userId
+			Authority authority;
+			if ("admin".equals(userId)) {
+				authority = new Authority("ADMIN");
+			} else {
+				authority = new Authority("USER");
+			}
+			user.setAuthorities(Arrays.asList(authority));
+		}
+		return user;
 	}
 
 	@Override

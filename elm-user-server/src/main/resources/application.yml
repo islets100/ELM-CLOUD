@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: elm-user-server
+  datasource:
+    url: jdbc:mysql://localhost:3306/elm2?characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+    username: root
+    password: Yb091864
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  cloud:
+    config:
+      enabled: false
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: team.tjusw.elm.po
+  configuration:
+    map-underscore-to-camel-case: true
+
+jwt:
+  secret: elm-cloud-user-service-dev-secret-key-please-change-1234567890-abcdefghijk
+  token-validity-in-seconds: 86400
+  token-validity-in-seconds-for-remember-me: 2592000

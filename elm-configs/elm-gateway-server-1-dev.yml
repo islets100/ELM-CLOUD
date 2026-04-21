@@ -95,12 +95,38 @@ spring:
           args:
             name: pointCircuitBreaker
             fallbackUri: forward:/pointFallback
+
+      - id: integralApiServer
+        uri: lb://elm-point-server
+        predicates:
+        -  Path=/api/integral/**
+        filters:
+        - name: StripPrefix
+          args:
+            parts: 2
+        - name: CircuitBreaker
+          args:
+            name: integralCircuitBreaker
+            fallbackUri: forward:/pointFallback
       
       - id: walletServer
         uri: lb://elm-wallet-server
         predicates:
         -  Path=/virtual-wallets/**
         filters:
+        - name: CircuitBreaker
+          args:
+            name: walletCircuitBreaker
+            fallbackUri: forward:/walletFallback
+
+      - id: walletApiServer
+        uri: lb://elm-wallet-server
+        predicates:
+        -  Path=/api/wallet/**,/api/vip/**
+        filters:
+        - name: StripPrefix
+          args:
+            parts: 2
         - name: CircuitBreaker
           args:
             name: walletCircuitBreaker

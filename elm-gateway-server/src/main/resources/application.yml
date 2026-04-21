@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: elm-gateway-server
+  cloud:
+    config:
+      enabled: false
+
+server:
+  port: 14000
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:13000/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.cloud.client.ip-address}:${server.port}

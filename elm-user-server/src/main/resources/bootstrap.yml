@@ -3,11 +3,12 @@ server:
 spring:
   cloud:
     config:
+      enabled: false
       name: elm-user-server-1
       profile: dev
       label: elm-configs
       discovery:
-        enabled: true
+        enabled: false
         service-id: elm-config-server
 
 eurekahost1: 127.0.0.1 # 换成部署了该eureka server的主机的公网IP
