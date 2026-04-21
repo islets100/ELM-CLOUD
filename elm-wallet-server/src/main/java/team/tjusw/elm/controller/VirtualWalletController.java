@@ -76,6 +76,17 @@ public class VirtualWalletController {
         }
     }
 
+    @PostMapping("/transfer")
+    public CommonResult<Integer> transfer(@RequestParam("fromUserId") String fromUserId,
+            @RequestParam("toUserId") String toUserId,
+            @RequestParam("amount") BigDecimal amount) {
+        try {
+            return new CommonResult<>(200, "success", walletService.transfer(fromUserId, toUserId, amount));
+        } catch (Exception e) {
+            return new CommonResult<>(500, e.getMessage(), 0);
+        }
+    }
+
     @PostMapping("/repayOverdraft")
     public CommonResult<Boolean> repayOverdraft(@RequestParam("userId") String userId,
             @RequestParam("amount") BigDecimal amount) {

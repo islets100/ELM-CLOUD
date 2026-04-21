@@ -19,7 +19,6 @@ import Business from '../views/Business.vue'
 import BusinessRegister from '../views/BusinessRegister.vue'
 import BusinessManage from '../views/BusinessManage.vue'
 
-// admin目录下
 import AdminLogin from '../views/admin/AdminLogin.vue'
 import UserManagement from '../views/admin/UserManagement.vue'
 import AddUser from '../views/admin/AddUser.vue'
@@ -28,7 +27,6 @@ import RewardRuleManagement from '../views/admin/RewardRuleManagement.vue'
 import auth from '../utils/auth'
 
 const routes = [
-	// 首页和公共页面
 	{
 		path: '/',
 		name: 'Home',
@@ -90,28 +88,34 @@ const routes = [
 		name: 'AddUserAddress',
 		component: AddUserAddress
 	},
-	// 编辑用户地址保留动态参数
 	{
 		path: '/editAddress/:id',
 		name: 'EditUserAddress',
 		component: EditUserAddress
 	},
-
-	// 商家路由
 	{
 		path: '/businessRegister',
 		name: 'BusinessRegister',
-		component: BusinessRegister
+		component: BusinessRegister,
+		meta: {
+			isBusiness: true
+		}
 	},
 	{
 		path: '/businessOrders',
 		name: 'BusinessOrders',
-		component: BusinessOrders
+		component: BusinessOrders,
+		meta: {
+			isBusiness: true
+		}
 	},
 	{
 		path: '/business',
 		name: 'Business',
-		component: Business
+		component: Business,
+		meta: {
+			isBusiness: true
+		}
 	},
 	{
 		path: '/businessManage',
@@ -121,8 +125,6 @@ const routes = [
 			isBusiness: true
 		}
 	},
-
-	// admin路由
 	{
 		path: '/admin/login',
 		name: 'AdminLogin',
@@ -141,7 +143,7 @@ const routes = [
 		}
 	},
 	{
-		path: '/admin/add-user', // 使用第二份的新路径
+		path: '/admin/add-user',
 		name: 'AddUser',
 		component: AddUser,
 		meta: {
@@ -155,7 +157,7 @@ const routes = [
 		component: () => import('../views/admin/AddBusiness.vue'),
 		meta: {
 			requiresAuth: true,
-			isAdmin: true // 只有管理员才能访问
+			isAdmin: true
 		}
 	},
 	{
@@ -164,11 +166,9 @@ const routes = [
 		component: RewardRuleManagement,
 		meta: {
 			requiresAuth: true,
-			isAdmin: true // 只有管理员才能访问
+			isAdmin: true
 		}
 	},
-
-	// 普通用户路由
 	{
 		path: '/user/info',
 		name: 'UserInfo',
@@ -178,13 +178,13 @@ const routes = [
 		}
 	},
 	{
-	  path: '/user/password',
-		  name: 'PasswordUpdate',
-		  component: () => import('@/views/PasswordUpdate.vue'),
-		  meta: {
-		    requiresAuth: true // 需要登录才能访问
-		  }
-		},
+		path: '/user/password',
+		name: 'PasswordUpdate',
+		component: () => import('@/views/PasswordUpdate.vue'),
+		meta: {
+			requiresAuth: true
+		}
+	},
 	{
 		path: '/user/birthday',
 		name: 'BirthdaySetting',
@@ -209,7 +209,6 @@ const routes = [
 			requiresAuth: true
 		}
 	},
-	// 钱包相关路由
 	{
 		path: '/wallet',
 		name: 'Wallet',
@@ -218,7 +217,6 @@ const routes = [
 			requiresAuth: true
 		}
 	},
-	// 积分相关路由
 	{
 		path: '/points',
 		name: 'Points',
@@ -275,7 +273,6 @@ const routes = [
 			requiresAuth: true
 		}
 	},
-	// VIP相关路由
 	{
 		path: '/vip/center',
 		name: 'VipCenter',
@@ -310,25 +307,19 @@ const routes = [
 	}
 ]
 
-// 创建路由
 const router = createRouter({
 	history: createWebHistory(process.env.BASE_URL),
 	routes
 })
 
-// 防止重复点击报错
 const originalPush = router.push
 router.push = function push(location) {
 	return originalPush.call(this, location).catch(err => err)
 }
 
-// 路由守卫
 router.beforeEach((to, from, next) => {
 	const user = auth.getUserInfo()
-	console.log('路由守卫触发 → to:', to.fullPath, ', from:', from.fullPath)
-	console.log('当前用户信息:', user)
 
-	// 公共路由直接放行
 	if (to.meta.isPublic) {
 		if (auth.isAdmin() && to.path === '/admin/login') {
 			return next('/admin/users')
@@ -336,7 +327,6 @@ router.beforeEach((to, from, next) => {
 		return next()
 	}
 
-	// 管理员页面权限控制
 	if (to.meta.isAdmin) {
 		if (!user || !auth.isAdmin()) {
 			return next({
@@ -348,7 +338,6 @@ router.beforeEach((to, from, next) => {
 		}
 	}
 
-	// 商家页面权限控制
 	if (to.meta.isBusiness) {
 		if (!user || !auth.isBusiness()) {
 			return next({
@@ -360,7 +349,6 @@ router.beforeEach((to, from, next) => {
 		}
 	}
 
-	// “我的”页面需要登录
 	if (to.meta.requiresAuth) {
 		if (!user) {
 			return next({

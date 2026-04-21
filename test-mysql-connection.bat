@@ -6,7 +6,7 @@ echo ====================================
 echo.
 
 set MYSQL_USER=root
-set MYSQL_PASSWORD=Yb091864
+set MYSQL_PASSWORD=123456
 set MYSQL_HOST=localhost
 set MYSQL_PORT=3306
 

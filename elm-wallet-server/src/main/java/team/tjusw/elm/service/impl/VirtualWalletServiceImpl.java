@@ -96,6 +96,21 @@ public class VirtualWalletServiceImpl implements VirtualWalletService {
 
     @Override
     @Transactional
+    public int transfer(String fromUserId, String toUserId, BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            return 0;
+        }
+        if (!pay(fromUserId, amount)) {
+            return 0;
+        }
+        if (!recharge(toUserId, amount)) {
+            throw new RuntimeException("Transfer failed");
+        }
+        return 1;
+    }
+
+    @Override
+    @Transactional
     public boolean repayOverdraft(String userId, BigDecimal amount) {
         VirtualWalletPO wallet = virtualWalletMapper.selectByUserId(userId);
         if (wallet == null)

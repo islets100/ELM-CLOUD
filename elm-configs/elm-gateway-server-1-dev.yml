@@ -1,32 +1,22 @@
 spring:
   application:
     name: elm-gateway-server
-  #gateway的配置
   cloud:
     gateway:
-
       httpclient:
-          connect-timeout: 20000
-          response-timeout: 20s
+        connect-timeout: 20000
+        response-timeout: 20s
       globalcors:
         cors-configurations:
           '[/**]':
             allowedOrigins: "*"
             allowedHeaders: "*"
             allowedMethods: "*"
-      default-filters:  #全局熔断降级
-      - name: CircuitBreaker
-        args:
-          name: globalCircuitBreaker
-          fallbackUri: forward:/globalFallback
-      
-
-
-      routes:    # 路由
+      routes:
       - id: userServer
         uri: lb://elm-user-server
         predicates:
-        -  Path=/users/**
+        - Path=/users/**
         filters:
         - name: CircuitBreaker
           args:
@@ -46,7 +36,7 @@ spring:
       - id: businessServer
         uri: lb://elm-business-server
         predicates:
-        -  Path=/businesses/**
+        - Path=/businesses/**
         filters:
         - name: CircuitBreaker
           args:
@@ -55,12 +45,35 @@ spring:
         - name: BusinessOrderTypeCacheGet
         - name: BusinessCacheGet
 
+      - id: businessApiServer
+        uri: lb://elm-business-server
+        predicates:
+        - Path=/api/businesses/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
+        - name: CircuitBreaker
+          args:
+            name: businessCircuitBreaker
+            fallbackUri: forward:/businessFallback
+        - name: BusinessOrderTypeCacheGet
+        - name: BusinessCacheGet
 
       - id: cartServer
         uri: lb://elm-cart-server
         predicates:
-        -  Path=/carts/**
+        - Path=/carts/**
         filters:
+        - name: CircuitBreaker
+          args:
+            name: cartCircuitBreaker
+            fallbackUri: forward:/cartFallback
+
+      - id: cartApiServer
+        uri: lb://elm-cart-server
+        predicates:
+        - Path=/api/carts/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
         - name: CircuitBreaker
           args:
             name: cartCircuitBreaker
@@ -69,8 +82,19 @@ spring:
       - id: deliveryServer
         uri: lb://elm-delivery-server
         predicates:
-        -  Path=/delivery-addresses/**
+        - Path=/delivery-addresses/**
         filters:
+        - name: CircuitBreaker
+          args:
+            name: deliveryCircuitBreaker
+            fallbackUri: forward:/deliveryFallback
+
+      - id: deliveryApiServer
+        uri: lb://elm-delivery-server
+        predicates:
+        - Path=/api/delivery-addresses/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
         - name: CircuitBreaker
           args:
             name: deliveryCircuitBreaker
@@ -79,8 +103,19 @@ spring:
       - id: ordersServer
         uri: lb://elm-order-server
         predicates:
-        -  Path=/orders/**
+        - Path=/orders/**
         filters:
+        - name: CircuitBreaker
+          args:
+            name: orderCircuitBreaker
+            fallbackUri: forward:/orderFallback
+
+      - id: ordersApiServer
+        uri: lb://elm-order-server
+        predicates:
+        - Path=/api/orders/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
         - name: CircuitBreaker
           args:
             name: orderCircuitBreaker
@@ -89,8 +124,19 @@ spring:
       - id: pointServer
         uri: lb://elm-point-server
         predicates:
-        -  Path=/points/**
+        - Path=/points/**
         filters:
+        - name: CircuitBreaker
+          args:
+            name: pointCircuitBreaker
+            fallbackUri: forward:/pointFallback
+
+      - id: pointApiServer
+        uri: lb://elm-point-server
+        predicates:
+        - Path=/api/points/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
         - name: CircuitBreaker
           args:
             name: pointCircuitBreaker
@@ -99,20 +145,18 @@ spring:
       - id: integralApiServer
         uri: lb://elm-point-server
         predicates:
-        -  Path=/api/integral/**
+        - Path=/api/integral/**,/api/promotion-day/**
         filters:
-        - name: StripPrefix
-          args:
-            parts: 2
+        - RewritePath=/api/(?<segment>.*), /${segment}
         - name: CircuitBreaker
           args:
             name: integralCircuitBreaker
             fallbackUri: forward:/pointFallback
-      
+
       - id: walletServer
         uri: lb://elm-wallet-server
         predicates:
-        -  Path=/wallet/**
+        - Path=/wallet/**
         filters:
         - name: CircuitBreaker
           args:
@@ -122,21 +166,18 @@ spring:
       - id: walletApiServer
         uri: lb://elm-wallet-server
         predicates:
-        -  Path=/api/wallet/**,/api/vip/**
+        - Path=/api/wallet/**,/api/vip/**
         filters:
-        - name: StripPrefix
-          args:
-            parts: 2
+        - RewritePath=/api/(?<segment>.*), /${segment}
         - name: CircuitBreaker
           args:
             name: walletCircuitBreaker
             fallbackUri: forward:/walletFallback
 
-
       - id: foodServer
         uri: lb://elm-food-server
         predicates:
-        -  Path=/foods/**
+        - Path=/foods/**
         filters:
         - name: CircuitBreaker
           args:
@@ -144,7 +185,19 @@ spring:
             fallbackUri: forward:/foodFallback
         - name: FoodCacheGet
         - name: BusinessFoodCacheGet
-  
+
+      - id: foodApiServer
+        uri: lb://elm-food-server
+        predicates:
+        - Path=/api/foods/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
+        - name: CircuitBreaker
+          args:
+            name: foodCircuitBreaker
+            fallbackUri: forward:/foodFallback
+        - name: FoodCacheGet
+        - name: BusinessFoodCacheGet
     loadbalancer:
       eager-load:
         clients:

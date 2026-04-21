@@ -1,10 +1,19 @@
 package team.tjusw.elm.dto;
 
 public class RegisterDto {
+	private String username;
 	private String userId;
 	private String password;
 	private String userName;
 	private Integer userSex;
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
 
 	public String getUserId() {
 		return userId;

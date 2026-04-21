@@ -1,77 +1,70 @@
 <template>
 	<div class="wrapper">
-		<!-- header部分 -->
 		<header>
 			<p>我的订单</p>
 		</header>
-		<!-- 订单列表部分 -->
-		<h3>未支付订单信息：</h3>
+
+		<h3>待支付订单</h3>
 		<ul class="order">
-			<li v-for="item in orderArr" v-show="item.orderState==0">
+			<li v-for="item in unpaidOrders" :key="item.id">
 				<div class="order-info">
 					<p>
-						{{item.business.businessName}}
+						{{ item.business.businessName }}
 						<i class="fa fa-caret-down" @click="detailetShow(item)"></i>
 					</p>
 					<div class="order-info-right">
-						<p>&#165;{{item.orderTotal}}</p>
+						<p>&#165;{{ item.orderTotal }}</p>
 						<div class="order-info-right-icon" @click="goToPayment(item)">去支付</div>
 					</div>
 				</div>
 				<ul class="order-detailet" v-show="item.isShowDetailet">
-					<li v-for="odItem in item.list">
-						<p>{{odItem.food.foodName}} x {{odItem.quantity}}</p>
-						<p>&#165;{{odItem.food.foodPrice * odItem.quantity}}</p>
+					<li v-for="odItem in item.list" :key="odItem.id || odItem.foodId">
+						<p>{{ odItem.food?.foodName || '商品' }} x {{ odItem.quantity }}</p>
+						<p>&#165;{{ (odItem.food?.foodPrice || 0) * odItem.quantity }}</p>
 					</li>
-
 					<li>
 						<p>配送费</p>
-						<p>&#165;{{item.business.deliveryPrice}}</p>
+						<p>&#165;{{ item.business.deliveryPrice || 0 }}</p>
 					</li>
 				</ul>
 			</li>
-
 		</ul>
-		<h3>已支付订单信息：</h3>
+
+		<h3>已支付订单</h3>
 		<ul class="order">
-			<li v-for="item in orderArr" v-show="item.orderState==1 || item.orderState==2 || item.orderState==3 || item.orderState==4">
+			<li v-for="item in finishedOrders" :key="item.id">
 				<div class="order-info">
 					<p>
-						{{item.business.businessName}}
-						<span class="order-status">{{getStatusText(item.orderState)}}</span>
+						{{ item.business.businessName }}
+						<span class="order-status">{{ getStatusText(item.orderState) }}</span>
 						<i class="fa fa-caret-down" @click="detailetShow(item)"></i>
 					</p>
 					<div class="order-info-right">
-						<p>&#165;{{item.orderTotal}}</p>
-						<!-- 仅在订单状态为3（已完成）时显示确认收货按钮 -->
-						<div v-if="item.orderState==3" class="order-info-right-icon confirm-receipt-btn" @click="confirmReceipt(item)">
+						<p>&#165;{{ item.orderTotal }}</p>
+						<div v-if="item.orderState === 3" class="order-info-right-icon confirm-receipt-btn" @click="confirmReceipt(item)">
 							确认收货
 						</div>
-						<!-- 订单状态为4（已确认收货）时显示已确认收货按钮（不可点击），并可进行评价 -->
-						<div v-if="item.orderState==4" class="order-info-right-icon confirmed-receipt-btn">
-							已确认收货
+						<div v-if="item.orderState === 4" class="order-info-right-icon confirmed-receipt-btn">
+							已完成
 						</div>
 					</div>
 				</div>
 				<ul class="order-detailet" v-show="item.isShowDetailet">
-					<li v-for="odItem in item.list">
-						<p>{{odItem.food.foodName}} x {{odItem.quantity}}</p>
-						<p>&#165;{{odItem.food.foodPrice * odItem.quantity}}</p>
+					<li v-for="odItem in item.list" :key="odItem.id || odItem.foodId">
+						<p>{{ odItem.food?.foodName || '商品' }} x {{ odItem.quantity }}</p>
+						<p>&#165;{{ (odItem.food?.foodPrice || 0) * odItem.quantity }}</p>
 					</li>
-
 					<li>
 						<p>配送费</p>
-						<p>&#165;{{item.business.deliveryPrice}}</p>
+						<p>&#165;{{ item.business.deliveryPrice || 0 }}</p>
 					</li>
-
-					<!-- 已确认收货订单：显示评价区域（仅前端展示，不落库） -->
-					<li v-if="item.orderState==4 && !item.hasCommented">
+					<li v-if="item.orderState === 4 && !item.hasCommented">
 						<div class="comment-section">
-							<p class="comment-title">本次购物体验如何，来分享一下吧！</p>
+							<p class="comment-title">评价后可获得积分奖励</p>
 							<textarea
 								v-model="item.commentContent"
 								class="comment-textarea"
-								placeholder="分享一下本次下单的体验，15字以上可获得积分~"
+								placeholder="输入评价内容，字数满 15 可获得积分"
 								rows="3"
 							></textarea>
 							<div class="comment-upload">
@@ -82,223 +75,225 @@
 										multiple
 										@change="handleCommentImageChange($event, item)"
 									/>
-									<span>上传图片（可选）</span>
+									<span>上传图片</span>
 								</label>
 								<div class="comment-preview" v-if="item.commentImages && item.commentImages.length">
 									<img
 										v-for="(img, idx) in item.commentImages"
 										:key="idx"
 										:src="img.preview"
-										alt="评论图片预览"
+										alt="评价图片预览"
 									/>
 								</div>
 							</div>
 							<div class="comment-footer">
-								<span class="comment-tip">
-									15字以上不带图 5 积分，15字以上带图 10 积分，15字以下 0 积分（积分有效期一年）
-								</span>
+								<span class="comment-tip">15 字以上奖励 5 积分，带图奖励 10 积分。</span>
 								<button class="comment-submit" @click="submitComment(item)">
-									提交评价并领取积分
+									提交评价
 								</button>
 							</div>
 						</div>
 					</li>
 				</ul>
 			</li>
-
 		</ul>
-		<!-- 底部菜单部分 -->
-		<Footer></Footer>
 
+		<Footer></Footer>
 	</div>
 </template>
 
 <script>
-	import Footer from '../components/Footer.vue';
-	import auth from '../utils/auth';
-	import pointsApi from '../api/points.js';
+import Footer from '../components/Footer.vue'
+import auth from '../utils/auth'
+import pointsApi from '../api/points.js'
 
-	export default {
-		name: 'OrderList',
-		data() {
-			return {
-				orderArr: [],
-				user: {}
+export default {
+	name: 'OrderList',
+	components: {
+		Footer
+	},
+	data() {
+		return {
+			orderArr: [],
+			user: {}
+		}
+	},
+	async created() {
+		this.user = auth.getUserInfo()
+		if (!this.user?.id) {
+			alert('请先登录')
+			this.$router.push('/login')
+			return
+		}
+
+		await this.loadOrders()
+	},
+	computed: {
+		unpaidOrders() {
+			return this.orderArr.filter(item => item.orderState === 0)
+		},
+		finishedOrders() {
+			return this.orderArr.filter(item => item.orderState !== 0)
+		}
+	},
+	methods: {
+		detailetShow(order) {
+			order.isShowDetailet = !order.isShowDetailet
+		},
+
+		goToPayment(item) {
+			if (!item?.id) {
+				return
+			}
+			this.$router.push({
+				path: '/payment',
+				query: {
+					orderId: item.id
+				}
+			})
+		},
+
+		getStatusText(orderState) {
+			switch (orderState) {
+				case 1:
+					return '已支付'
+				case 2:
+					return '配送中'
+				case 3:
+					return '待收货'
+				case 4:
+					return '已完成'
+				default:
+					return '处理中'
 			}
 		},
-		created() {
-			this.user = auth.getUserInfo();
-			if (!this.user) {
-				alert('请先登录');
-				this.$router.push('/login');
-				return;
+
+		confirmReceipt() {
+			alert('当前订单服务未提供确认收货接口')
+		},
+
+		async loadOrders() {
+			try {
+				const response = await this.$axios.get(`/api/orders/user/${this.user.id}`)
+				if (!response.data.success) {
+					this.orderArr = []
+					return
+				}
+
+				const orders = response.data.data || []
+				const businessIds = [...new Set(orders.map(order => order.businessId).filter(Boolean))]
+				const foodIds = [
+					...new Set(
+						orders.flatMap(order => (order.orderDetails || []).map(detail => detail.foodId).filter(Boolean))
+					)
+				]
+
+				const [businessResponses, foodResponses] = await Promise.all([
+					Promise.all(businessIds.map(id => this.$axios.get(`/api/businesses/${id}`))),
+					Promise.all(foodIds.map(id => this.$axios.get(`/api/foods/${id}`)))
+				])
+
+				const businessMap = {}
+				businessResponses.forEach(item => {
+					if (item.data.success && item.data.data) {
+						businessMap[item.data.data.id] = item.data.data
+					}
+				})
+
+				const foodMap = {}
+				foodResponses.forEach(item => {
+					if (item.data.success && item.data.data) {
+						foodMap[item.data.data.id] = item.data.data
+					}
+				})
+
+				this.orderArr = orders.map(order => {
+					const details = (order.orderDetails || []).map(detail => ({
+						...detail,
+						food: foodMap[detail.foodId] || null
+					}))
+
+					return {
+						...order,
+						business: businessMap[order.businessId] || {},
+						orderDetails: details,
+						list: details,
+						isShowDetailet: false,
+						commentContent: '',
+						commentImages: [],
+						hasCommented: false
+					}
+				})
+			} catch (error) {
+				console.error('Failed to load orders:', error)
+				this.orderArr = []
+			}
+		},
+
+		handleCommentImageChange(event, item) {
+			const files = Array.from(event.target.files || [])
+			if (!files.length) {
+				item.commentImages = []
+				return
 			}
 
-			this.loadOrders();
-		},
-		methods: {
-			detailetShow(orders) {
-				orders.isShowDetailet = !orders.isShowDetailet;
-			},
-			goToPayment(item) {
-				console.log('传递的 item:', item); // 打印完整的 item 对象，检查里面的 orderId
-				if (item && item.id) {
-					console.log('传递的 orderId:', item.id); // 打印传递的 orderId
-					this.$router.push({
-						path: '/payment',
-						query: {
-							orderId: item.id
-						}
-					});
-				} else {
-					console.error('无效的 orderId');
-					alert('无效的订单ID');
-				}
-			},
-			getStatusText(orderState) {
-				switch(orderState) {
-					case 1: return '待接单';
-					case 2: return '已接单';
-					case 3: return '已完成';
-					case 4: return '已确认收货';
-					default: return '未知状态';
-				}
-			},
-			confirmReceipt(item) {
-				if (!item || !item.id) {
-					alert('无效的订单ID');
-					return;
-				}
-
-				// 确认收货
-				if (!confirm('确认收货后，商家将收到货款，是否确认收货？')) {
-					return;
-				}
-
-				this.$axios.post(`/api/orders/${item.id}/confirm`)
-					.then(response => {
-						if (response.data.success) {
-							alert('确认收货成功！');
-							// 更新订单状态
-							item.orderState = 4;
-							// 重新加载订单列表以刷新显示
-							this.loadOrders();
-						} else {
-							alert(response.data.message || '确认收货失败，请重试');
-						}
+			const limitedFiles = files.slice(0, 3)
+			item.commentImages = []
+			limitedFiles.forEach(file => {
+				const reader = new FileReader()
+				reader.onload = loadEvent => {
+					item.commentImages.push({
+						file,
+						preview: loadEvent.target.result
 					})
-					.catch(error => {
-						console.error('确认收货出错:', error);
-						alert(error.response?.data?.message || '确认收货出错，请稍后再试');
-					});
-			},
-			loadOrders() {
-				// 请求用户订单
-				this.$axios.get('/api/orders', {
-					params: {
-						userId: this.user.id
-					}
-				}).then(response => {
-					console.log('订单接口返回:', response.data); // 调试用
-					if (response.data.success) {
-						let result = response.data.data;
-						this.orderArr = result.map(order => {
-							console.log('每个订单的 orderId:', order.id); // 确保每个订单的 ID 有值
-							order.isShowDetailet = false;
-							order.list = order.orderDetails;
-							// 评价相关临时字段，仅前端使用
-							order.commentContent = '';
-							order.commentImages = [];
-							order.hasCommented = false; // 本次会话是否已评价
-							return order;
-						});
-					} else {
-						this.orderArr = [];
-					}
-				}).catch(error => {
-					console.error(error);
-					this.orderArr = [];
-				});
-			},
-			// 处理评价图片选择（仅前端展示，不上传到后端）
-			handleCommentImageChange(e, item) {
-				const files = Array.from(e.target.files || []);
-				if (!files.length) {
-					item.commentImages = [];
-					return;
 				}
-				// 仅做预览，数量适当限制（例如最多 3 张）
-				const limitedFiles = files.slice(0, 3);
-				item.commentImages = [];
-				limitedFiles.forEach(file => {
-					const reader = new FileReader();
-					reader.onload = (evt) => {
-						item.commentImages.push({
-							file,
-							preview: evt.target.result
-						});
-					};
-					reader.readAsDataURL(file);
-				});
-			},
-			// 提交评价并领取积分
-			async submitComment(item) {
-				if (!item || !item.id) {
-					alert('无效的订单信息');
-					return;
-				}
-				if (item.hasCommented) {
-					alert('本订单已完成评价，无法重复领取积分');
-					return;
-				}
+				reader.readAsDataURL(file)
+			})
+		},
 
-				const content = (item.commentContent || '').trim();
-				const hasPicture = item.commentImages && item.commentImages.length > 0;
-
-				if (!content) {
-					if (!confirm('未填写任何内容，将无法获得积分，是否继续提交？')) {
-						return;
-					}
-				}
-
-				try {
-					const resp = await pointsApi.comment(item.id, content, hasPicture);
-					if (resp.data && resp.data.success) {
-						const got = resp.data.data || 0;
-						if (got > 0) {
-							alert(`评价成功，本次获得 ${got} 积分，积分将在“我的积分”中展示，有效期一年。`);
-						} else {
-							alert('评价已提交，但未满足积分规则（15字以上才可获得积分）。');
-						}
-						// 标记为已评价，本次会话不再显示评价区
-						item.hasCommented = true;
-						item.commentContent = '';
-						item.commentImages = [];
-					} else {
-						alert(resp.data.message || '提交评价失败，请稍后再试');
-					}
-				} catch (err) {
-					console.error('提交评价失败', err);
-					alert(err.response?.data?.message || '提交评价失败，请稍后再试');
-				}
+		async submitComment(item) {
+			if (!item?.id) {
+				return
+			}
+			if (item.hasCommented) {
+				alert('该订单已经评价过了')
+				return
 			}
 
-		},
-		components: {
-			Footer
+			const content = (item.commentContent || '').trim()
+			const hasPicture = Array.isArray(item.commentImages) && item.commentImages.length > 0
+
+			if (!content && !confirm('未填写评价内容将无法获得积分，确认继续提交吗？')) {
+				return
+			}
+
+			try {
+				const response = await pointsApi.comment(item.id, content, hasPicture)
+				if (!response.data.success) {
+					alert(response.data.message || '评价失败')
+					return
+				}
+
+				item.hasCommented = true
+				item.commentContent = ''
+				item.commentImages = []
+				const points = response.data.data || 0
+				alert(points > 0 ? `评价成功，获得 ${points} 积分` : '评价成功')
+			} catch (error) {
+				console.error('Failed to submit comment:', error)
+				alert(error.response?.data?.message || '评价失败')
+			}
 		}
 	}
+}
 </script>
 
-
 <style scoped>
-	/****************** 总容器 ******************/
 	.wrapper {
 		width: 100%;
 		height: 100%;
 	}
 
-	/****************** header部分 ******************/
 	.wrapper header {
 		width: 100%;
 		height: 12vw;
@@ -314,7 +309,6 @@
 		align-items: center;
 	}
 
-	/****************** 历史订单列表部分 ******************/
 	.wrapper h3 {
 		margin-top: 12vw;
 		box-sizing: border-box;
@@ -383,7 +377,6 @@
 		align-items: center;
 	}
 
-	/* 评论区域样式 */
 	.comment-section {
 		width: 100%;
 		box-sizing: border-box;
@@ -469,7 +462,6 @@
 		cursor: pointer;
 	}
 
-	/****************** 订单状态样式 ******************/
 	.wrapper .order li .order-info p .order-status {
 		margin-left: 2vw;
 		padding: 0.5vw 2vw;

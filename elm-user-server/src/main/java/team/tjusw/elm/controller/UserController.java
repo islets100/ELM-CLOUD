@@ -109,16 +109,25 @@ public class UserController {
 
 	@PostMapping("/api/register")
 	public CommonResult<User> register(@RequestBody RegisterDto registerDto) {
-		if (registerDto == null || !StringUtils.hasText(registerDto.getUserId())
-				|| !StringUtils.hasText(registerDto.getPassword()) || !StringUtils.hasText(registerDto.getUserName())
-				|| registerDto.getUserSex() == null) {
+		if (registerDto == null) {
 			return new CommonResult<User>(400, "missing required fields", null);
 		}
+
+		String legacyUsername = StringUtils.hasText(registerDto.getUsername()) ? registerDto.getUsername().trim() : null;
+		String userId = StringUtils.hasText(registerDto.getUserId()) ? registerDto.getUserId().trim() : legacyUsername;
+		String userName = StringUtils.hasText(registerDto.getUserName()) ? registerDto.getUserName().trim() : legacyUsername;
+		String password = StringUtils.hasText(registerDto.getPassword()) ? registerDto.getPassword() : "password";
+		Integer userSex = registerDto.getUserSex() != null ? registerDto.getUserSex() : 1;
+
+		if (!StringUtils.hasText(userId) || !StringUtils.hasText(userName) || !StringUtils.hasText(password)) {
+			return new CommonResult<User>(400, "missing required fields", null);
+		}
+
 		User user = new User();
-		user.setUserId(registerDto.getUserId());
-		user.setPassword(registerDto.getPassword());
-		user.setUserName(registerDto.getUserName());
-		user.setUserSex(registerDto.getUserSex());
+		user.setUserId(userId);
+		user.setPassword(password);
+		user.setUserName(userName);
+		user.setUserSex(userSex);
 		int ret = userService.saveUser(user);
 		if (ret == 0) {
 			return new CommonResult<User>(409, "user already exists", null);

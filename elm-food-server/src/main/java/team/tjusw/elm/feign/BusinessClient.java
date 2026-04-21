@@ -5,6 +5,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @FeignClient(name = "elm-business-server", fallback = BusinessClientFallback.class)
 public interface BusinessClient {
-    @GetMapping("/business/{businessId}")
+    @GetMapping("/businesses/{businessId}")
     String getBusinessById(@PathVariable("businessId") Integer businessId);
 }

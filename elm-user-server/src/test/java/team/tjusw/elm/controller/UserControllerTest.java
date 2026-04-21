@@ -230,6 +230,19 @@ class UserControllerTest {
 	}
 
 	@Test
+	void registerShouldAcceptLegacyUsernamePayload() throws Exception {
+		when(userService.saveUser(any(User.class))).thenReturn(1);
+
+		mockMvc.perform(post("/api/register")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"username\":\"legacyUser\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value(200))
+				.andExpect(jsonPath("$.result.userId").value("legacyUser"))
+				.andExpect(jsonPath("$.result.userName").value("legacyUser"));
+	}
+
+	@Test
 	void createPersonShouldReturnConflictWhenExists() throws Exception {
 		when(userService.saveUser(any(User.class))).thenReturn(0);
 

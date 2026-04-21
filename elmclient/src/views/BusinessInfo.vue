@@ -1,70 +1,57 @@
 <template>
 	<div class="wrapper">
-		<!-- header部分 -->
 		<header>
-			<p>商家信息</p>
+			<p>商家详情</p>
 		</header>
-		<!-- 商家logo部分 -->
 		<div class="business-logo">
 			<img :src="business.businessImg || '../assets/sj01.png'" alt="商家图片">
 		</div>
-		<!-- 商家信息部分 -->
 		<div class="business-info">
-			<h1>{{business.businessName}}</h1>
-			<p>&#165;{{business.startPrice}}起送 &#165;{{business.deliveryPrice}}配送</p>
-			<p>{{business.businessExplain}}</p>
+			<h1>{{ business.businessName }}</h1>
+			<p>&#165;{{ business.startPrice }}起送 &#165;{{ business.deliveryPrice }}配送</p>
+			<p>{{ business.businessExplain }}</p>
 		</div>
-		<!-- 食品列表部分 -->
 		<ul class="food">
-
-			<!-- 无商品时显示空状态 -->
 			<li v-if="foodArr.length === 0" class="empty-food">
 				<i class="fa fa-cutlery"></i>
-				<span>暂无商品，敬请期待</span>
+				<span>暂无商品</span>
 			</li>
-
-			<!-- 商品列表渲染 -->
-			<li v-for="(item,index) in foodArr" :key="item.id">
+			<li v-for="(item, index) in foodArr" :key="item.id">
 				<div class="food-left">
 					<img :src="item.foodImg || '../assets/default-food.png'" alt="商品图片">
 					<div class="food-left-info">
-						<h3>{{item.foodName}}</h3>
-						<p>{{item.foodExplain}}</p>
-						<p>&#165;{{item.foodPrice}}</p>
+						<h3>{{ item.foodName }}</h3>
+						<p>{{ item.foodExplain }}</p>
+						<p>&#165;{{ item.foodPrice }}</p>
 					</div>
 				</div>
 				<div class="food-right">
 					<div>
-						<i class="fa fa-minus-circle" @click="minus(index)" v-show="item.quantity!=0"></i>
+						<i class="fa fa-minus-circle" @click="minus(index)" v-show="item.quantity !== 0"></i>
 					</div>
-					<p><span v-show="item.quantity!=0">{{item.quantity}}</span></p>
+					<p><span v-show="item.quantity !== 0">{{ item.quantity }}</span></p>
 					<div>
 						<i class="fa fa-plus-circle" @click="add(index)"></i>
 					</div>
 				</div>
 			</li>
 		</ul>
-		<!-- 购物车部分 -->
 		<div class="cart">
 			<div class="cart-left">
-				<div class="cart-left-icon"
-					:style="totalQuantity==0?'background-color:#505051;':'background-color:#3190E8;'">
+				<div class="cart-left-icon" :style="totalQuantity === 0 ? 'background-color:#505051;' : 'background-color:#3190E8;'">
 					<i class="fa fa-shopping-cart"></i>
-					<div class="cart-left-icon-quantity" v-show="totalQuantity!=0">{{totalQuantity}}</div>
+					<div class="cart-left-icon-quantity" v-show="totalQuantity !== 0">{{ totalQuantity }}</div>
 				</div>
 				<div class="cart-left-info">
-					<p>&#165;{{totalPrice}}</p>
-					<p>另需配送费{{business.deliveryPrice}}元</p>
+					<p>&#165;{{ totalPrice }}</p>
+					<p>另需配送费{{ business.deliveryPrice }}元</p>
 				</div>
 			</div>
 			<div class="cart-right">
-				<!--不够起送费-->
-				<div class="cart-right-item" v-show="totalSettle<business.startPrice"
-					style="background-color:#535356;cursor: default;">
-					&#165;{{business.startPrice}}起送
+				<div class="cart-right-item" v-show="totalSettle < business.startPrice" style="background-color:#535356;cursor: default;">
+					&#165;{{ business.startPrice }}起送
 				</div>
-				<!--达到起送费-->
-				<div class="cart-right-item" @click="toOrder" v-show="totalSettle>=business.startPrice">
+				<div class="cart-right-item" @click="toOrder" v-show="totalSettle >= business.startPrice">
 					去结算
 				</div>
 			</div>
@@ -73,241 +60,198 @@
 </template>
 
 <script>
-	import auth from '../utils/auth';
+import auth from '../utils/auth'
 
-	export default {
-		name: 'BusinessInfo',
-		data() {
-			return {
-				businessId: null, // 先设为 null
-				business: {},
-				foodArr: [],
-				user: null
+export default {
+	name: 'BusinessInfo',
+	data() {
+		return {
+			businessId: Number(this.$route.query.businessId),
+			business: {},
+			foodArr: [],
+			user: null
+		}
+	},
+	created() {
+		this.initData()
+	},
+	activated() {
+		this.initData()
+	},
+	methods: {
+		async initData() {
+			this.businessId = Number(this.$route.query.businessId)
+			this.user = auth.getUserInfo()
+
+			await Promise.all([this.getBusinessDetail(), this.getFoodList()])
+			if (this.user?.id) {
+				await this.loadCart()
 			}
 		},
-		activated() {
-			this.initData(); // 页面激活时初始化
+
+		async getBusinessDetail() {
+			try {
+				const response = await this.$axios.get(`/api/businesses/${this.businessId}`)
+				if (response.data.success) {
+					this.business = response.data.data || {}
+				}
+			} catch (error) {
+				console.error('Failed to load business detail:', error)
+			}
 		},
-		created() {
-			this.businessId = this.$route.query.businessId; // 动态获取
-			console.log('当前 businessId =', this.businessId); // 调试
 
-			// 从 auth 模块获取用户信息
-			this.user = auth.getUserInfo();
-			console.log('当前用户 =', this.user); // 调试
+		async getFoodList() {
+			try {
+				const response = await this.$axios.get(`/api/foods/business/${this.businessId}`)
+				if (!response.data.success) {
+					this.foodArr = []
+					return
+				}
 
-			this.initData(); // 初始化数据
+				this.foodArr = (response.data.data || []).map(food => ({
+					...food,
+					quantity: 0,
+					foodImg: food.foodImg || 'default.jpg'
+				}))
+			} catch (error) {
+				console.error('Failed to load foods:', error)
+				this.foodArr = []
+			}
 		},
-		methods: {
-			// 初始化数据
-			initData() {
-				// 从session获取用户
-				this.user = auth.getUserInfo();
-				console.log('initData 中的用户 =', this.user); // 调试
-				// 加载商家信息
-				this.getBusinessDetail();
-				// 加载商品列表
-				this.getLatestFoodList();
-			},
 
-			// 获取商家信息
-			getBusinessDetail() {
-				console.log('请求商家信息，businessId =', this.businessId); // 输出当前商家ID
-				this.$axios.get(`/api/businesses/getBusinessById?businessId=${this.businessId}`)
-					.then(response => {
-						console.log('商家信息接口返回:', response.data); // 输出完整返回数据
-						if (response.data.success) {
-							this.business = response.data.data;
-							console.log('商家数据已赋值:', this.business);
-						} else {
-							alert('获取商家信息失败: ' + response.data.message);
-						}
-					})
-					.catch(error => {
-						console.error('获取商家信息失败:', error.response || error);
-					});
-			},
-
-			// 获取商品列表
-			getLatestFoodList() {
-				this.$axios.get(`/api/foods/listFoodByBusinessId?businessId=${this.businessId}`)
-					.then(response => {
-						console.log('商品列表返回:', response.data); // <-- 看完整返回值
-						// 根据实际返回格式改判断
-						if (response.data.success && Array.isArray(response.data.data)) {
-							this.foodArr = response.data.data.map(food => ({
-								...food,
-								quantity: 0,
-								foodImg: food.foodImg ? food.foodImg : 'default.jpg'
-							}));
-							if (this.user) this.listCart();
-						} else {
-							console.warn('接口返回不符合预期', response.data);
-						}
-					}).catch(error => {
-						console.error('获取商品列表失败:', error);
-					});
-			},
-
-
-			// 同步购物车
-			listCart() {
-				console.log('[调试] 当前用户信息 =', this.user); // <-- 调试点1
-				console.log('[调试] userId =', this.user?.userId); // <-- 调试点2
-				console.log('[调试] businessId =', this.businessId); // <-- 调试点3
-
-				this.$axios.get(`/api/carts?userId=${this.user.id}&businessId=${this.businessId}`)
-					.then(response => {
-						console.log('[调试] 购物车接口返回 =', response.data); // <-- 调试点4
-						if (response.data.success && Array.isArray(response.data.data)) {
-							// 同步购物车数量到商品列表
-							response.data.data.forEach(cartItem => {
-								const foodIndex = this.foodArr.findIndex(item => item.id === cartItem.food.id);
-								if (foodIndex !== -1) {
-									this.foodArr[foodIndex].quantity = cartItem.quantity;
-								}
-							});
-						}
-					}).catch(error => {
-						console.error('同步购物车失败:', error);
-					});
-			},
-
-
-			// 添加商品到购物车
-			add(index) {
-				if (!this.user) {
-					alert('请先登录');
-					this.$router.push('/login');
-					return;
+		async loadCart() {
+			try {
+				const response = await this.$axios.get(`/api/carts/user/${this.user.id}/business/${this.businessId}`)
+				if (!response.data.success) {
+					return
 				}
-				console.log('[调试] add() 当前用户信息 =', this.user); // <-- 调试点
-				console.log('[调试] userId =', this.user?.userId);
 
-				// 前端先更新数量
-				this.foodArr[index].quantity += 1;
-				// 调用保存接口
-				this.saveCart(index);
-			},
+				const quantityMap = {}
+				;(response.data.data || []).forEach(cartItem => {
+					quantityMap[cartItem.foodId] = cartItem.quantity
+				})
 
-			// 从购物车减少商品
-			minus(index) {
-				if (!this.user) {
-					alert('请先登录');
-					this.$router.push('/login');
-					return;
-				}
-				if (this.foodArr[index].quantity > 0) {
-					// 前端先更新数量
-					this.foodArr[index].quantity -= 1;
-					// 调用更新接口
-					this.updateCart(index, this.foodArr[index].quantity);
-				}
-			},
+				this.foodArr = this.foodArr.map(item => ({
+					...item,
+					quantity: quantityMap[item.id] || 0
+				}))
+			} catch (error) {
+				console.error('Failed to load cart:', error)
+			}
+		},
 
-			// 保存购物车
-			saveCart(index) {
-				this.$axios.post('/api/carts/save', this.$qs.stringify({
-					businessId: this.businessId,
-					userId: this.user.id,
-					foodId: this.foodArr[index].id
-				})).then(response => {
-					if (!response.data.success) {
-						alert('添加购物车失败: ' + response.data.msg);
-						// 回滚数量
-						this.foodArr[index].quantity -= 1;
-					}
-				}).catch(error => {
-					console.error('添加购物车失败:', error);
-					// 回滚数量
-					this.foodArr[index].quantity -= 1;
-				});
-			},
+		add(index) {
+			if (!this.user?.id) {
+				alert('请先登录')
+				this.$router.push('/login')
+				return
+			}
 
-			// 更新购物车
-			updateCart(index, num) {
-				this.$axios.post('/api/carts/update', this.$qs.stringify({
+			this.foodArr[index].quantity += 1
+			this.saveCart(index)
+		},
+
+		minus(index) {
+			if (!this.user?.id) {
+				alert('请先登录')
+				this.$router.push('/login')
+				return
+			}
+
+			if (this.foodArr[index].quantity <= 0) {
+				return
+			}
+
+			this.foodArr[index].quantity -= 1
+			if (this.foodArr[index].quantity === 0) {
+				this.removeCart(index)
+				return
+			}
+			this.updateCart(index, this.foodArr[index].quantity)
+		},
+
+		async saveCart(index) {
+			try {
+				const response = await this.$axios.post('/api/carts', {
 					businessId: this.businessId,
 					userId: this.user.id,
 					foodId: this.foodArr[index].id,
-					quantity: num
-				})).then(response => {
-					if (!response.data.success) {
-						alert('更新购物车失败: ' + response.data.msg);
-						// 回滚数量
-						this.foodArr[index].quantity += 1;
-					}
-				}).catch(error => {
-					console.error('更新购物车失败:', error);
-					// 回滚数量
-					this.foodArr[index].quantity += 1;
-				});
-			},
-
-			// 删除购物车商品
-			removeCart(index) {
-				this.$axios.post('/api/carts/remove', this.$qs.stringify({
-					businessId: this.businessId,
-					userId: this.user.id,
-					foodId: this.foodArr[index].id,
-				})).then(response => {
-					if (response.data.success) {
-						this.foodArr[index].quantity = 0;
-					} else {
-						alert('删除购物车失败: ' + response.data.msg);
-					}
-				}).catch(error => {
-					console.error('删除购物车失败:', error);
-				});
-			},
-
-			// 去结算
-			toOrder() {
-				if (!this.user) {
-					alert('请先登录');
-					this.$router.push('/login');
-					return;
+					quantity: 1
+				})
+				if (!response.data.success) {
+					this.foodArr[index].quantity -= 1
 				}
-				this.$router.push({
-					path: '/orders',
-					query: {
-						businessId: this.business.id
-					}
-				});
+			} catch (error) {
+				console.error('Failed to save cart item:', error)
+				this.foodArr[index].quantity -= 1
 			}
 		},
 
-		computed: {
-			// 食品总价格
-			totalPrice() {
-				return this.foodArr.reduce((total, item) => {
-					return total + (item.foodPrice * item.quantity);
-				}, 0);
-			},
-			// 食品总数量
-			totalQuantity() {
-				return this.foodArr.reduce((quantity, item) => {
-					return quantity + item.quantity;
-				}, 0);
-			},
-			// 结算总价格（商品总价+配送费）
-			totalSettle() {
-				return this.totalPrice + (this.business.deliveryPrice || 0);
+		async updateCart(index, quantity) {
+			try {
+				const response = await this.$axios.put(
+					`/api/carts/user/${this.user.id}/business/${this.businessId}/food/${this.foodArr[index].id}`,
+					{ quantity }
+				)
+				if (!response.data.success) {
+					this.foodArr[index].quantity += 1
+				}
+			} catch (error) {
+				console.error('Failed to update cart item:', error)
+				this.foodArr[index].quantity += 1
 			}
+		},
+
+		async removeCart(index) {
+			try {
+				const response = await this.$axios.delete(
+					`/api/carts/user/${this.user.id}/business/${this.businessId}/food/${this.foodArr[index].id}`
+				)
+				if (!response.data.success) {
+					this.foodArr[index].quantity = 1
+				}
+			} catch (error) {
+				console.error('Failed to remove cart item:', error)
+				this.foodArr[index].quantity = 1
+			}
+		},
+
+		toOrder() {
+			if (!this.user?.id) {
+				alert('请先登录')
+				this.$router.push('/login')
+				return
+			}
+
+			this.$router.push({
+				path: '/orders',
+				query: {
+					businessId: this.businessId
+				}
+			})
+		}
+	},
+	computed: {
+		totalPrice() {
+			return this.foodArr.reduce((total, item) => total + item.foodPrice * item.quantity, 0)
+		},
+		totalQuantity() {
+			return this.foodArr.reduce((quantity, item) => quantity + item.quantity, 0)
+		},
+		totalSettle() {
+			return this.totalPrice + (this.business.deliveryPrice || 0)
 		}
 	}
+}
 </script>
 
 <style scoped>
-	/* 样式部分保持不变 */
-	/****************** 总容器 ******************/
 	.wrapper {
 		width: 100%;
 		min-height: 100vh;
 		background-color: #f5f5f5;
 	}
 
-	/****************** header部分 ******************/
 	.wrapper header {
 		width: 100%;
 		height: 12vw;
@@ -323,7 +267,6 @@
 		align-items: center;
 	}
 
-	/****************** 商家logo部分 ******************/
 	.wrapper .business-logo {
 		width: 100%;
 		padding-top: 12vw;
@@ -335,7 +278,6 @@
 		object-fit: cover;
 	}
 
-	/****************** 商家信息部分 ******************/
 	.wrapper .business-info {
 		width: 100%;
 		padding: 3vw;
@@ -356,7 +298,6 @@
 		line-height: 1.5;
 	}
 
-	/****************** 食品列表部分 ******************/
 	.wrapper .food {
 		width: 100%;
 		list-style: none;
@@ -452,7 +393,6 @@
 		cursor: pointer;
 	}
 
-	/****************** 购物车部分 ******************/
 	.wrapper .cart {
 		width: 100%;
 		height: 14vw;

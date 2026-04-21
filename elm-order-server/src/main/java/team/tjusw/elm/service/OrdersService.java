@@ -10,6 +10,10 @@ public interface OrdersService {
 	public Orders getOrdersById(Integer orderId);
 
 	public List<Orders> listOrdersByUserId(String userId);
-	
-	public Integer payByVirtualWallet(String userId, Integer orderId,int pointAmount);
+
+	public List<Orders> listOrdersByBusinessId(Integer businessId);
+
+	public Orders updateOrderState(Integer orderId, Integer orderState);
+
+	public Integer payByVirtualWallet(String userId, Integer orderId, int pointAmount);
 }

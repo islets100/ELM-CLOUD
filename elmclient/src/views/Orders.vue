@@ -1,17 +1,14 @@
 <template>
 	<div class="wrapper">
-		<!-- header部分 -->
 		<header>
 			<p>确认订单</p>
 		</header>
-		<!-- 订单信息部分 -->
 		<div class="order-info">
-			<h5>订单配送至：</h5>
+			<h5>订单配送信息</h5>
 			<div class="order-info-address" @click="toUserAddress">
 				<p>{{ deliveryaddress != null ? deliveryaddress.address : '请选择送货地址' }}</p>
 				<i class="fa fa-angle-right"></i>
 			</div>
-			<!-- 显示收货人信息：姓名、性别、电话 -->
 			<p v-if="deliveryaddress">
 				{{ deliveryaddress.contactName }}{{ formatSex(deliveryaddress.contactSex) }}
 				{{ deliveryaddress.contactTel }}
@@ -23,16 +20,11 @@
 
 		<h3>{{ business.businessName || '' }}</h3>
 
-		<!-- 订单明细部分 -->
 		<ul class="order-detailed">
 			<li v-for="item in cartArr.filter(i => i?.food)" :key="item?.id || 0">
 				<div class="order-detailed-left">
-					<!-- 修改后代码 -->
-					<img 
-					:src="item.food?.foodImg || '../assets/default-food.png'" 
-					alt="商品图片"
-					>
-					<p>{{ item.food?.foodName || '商品信息不存在' }} x {{ item.quantity || 0 }}</p>
+					<img :src="item.food?.foodImg || '../assets/default-food.png'" alt="商品图片">
+					<p>{{ item.food?.foodName || '商品' }} x {{ item.quantity || 0 }}</p>
 				</div>
 				<p>&#165;{{ (item.food?.foodPrice || 0) * (item.quantity || 0) }}</p>
 			</li>
@@ -42,7 +34,6 @@
 			<p>配送费</p>
 			<p>&#165;{{ business.deliveryPrice || 0 }}</p>
 		</div>
-		<!-- 合计部分 -->
 		<div class="total">
 			<div class="total-left">
 				&#165;{{ totalPrice }}
@@ -55,157 +46,156 @@
 </template>
 
 <script>
-	import auth from '../utils/auth';
+import auth from '../utils/auth'
 
-	export default {
-		name: 'Orders',
-		data() {
-			return {
-				businessId: this.$route.query.businessId,
-				business: {},
-				user: null, // 一定用 null 初始化
-				cartArr: [],
-				deliveryaddress: null
+export default {
+	name: 'Orders',
+	data() {
+		return {
+			businessId: Number(this.$route.query.businessId),
+			business: {},
+			user: null,
+			cartArr: [],
+			deliveryaddress: null,
+			foodMap: {}
+		}
+	},
+	async created() {
+		this.user = auth.getUserInfo()
+		if (!this.user?.id) {
+			alert('请先登录')
+			this.$router.push('/login')
+			return
+		}
+
+		this.deliveryaddress = this.$getLocalStorage(this.user.id) || null
+		await Promise.all([this.getBusinessDetail(), this.getFoodList()])
+		await this.getCart()
+	},
+	methods: {
+		async getBusinessDetail() {
+			try {
+				const response = await this.$axios.get(`/api/businesses/${this.businessId}`)
+				if (response.data.success) {
+					this.business = response.data.data || {}
+				}
+			} catch (error) {
+				console.error('Failed to load business detail:', error)
 			}
 		},
-		created() {
-			// 获取用户信息
-			this.user = auth.getUserInfo();
-			console.log('当前用户 =', this.user);
 
-			if (!this.user) {
-				alert('请先登录');
-				this.$router.push('/login');
-				return;
+		async getFoodList() {
+			try {
+				const response = await this.$axios.get(`/api/foods/business/${this.businessId}`)
+				if (!response.data.success) {
+					this.foodMap = {}
+					return
+				}
+
+				this.foodMap = (response.data.data || []).reduce((map, food) => {
+					map[food.id] = food
+					return map
+				}, {})
+			} catch (error) {
+				console.error('Failed to load foods:', error)
+				this.foodMap = {}
+			}
+		},
+
+		async getCart() {
+			try {
+				const response = await this.$axios.get(`/api/carts/user/${this.user.id}/business/${this.businessId}`)
+				if (!response.data.success) {
+					this.cartArr = []
+					return
+				}
+
+				this.cartArr = (response.data.data || []).map(item => ({
+					...item,
+					food: this.foodMap[item.foodId] || null
+				}))
+			} catch (error) {
+				console.error('Failed to load cart:', error)
+				this.cartArr = []
+			}
+		},
+
+		formatSex(value) {
+			return value === 1 ? '先生' : '女士'
+		},
+
+		toUserAddress() {
+			this.$router.push({
+				path: '/userAddress',
+				query: {
+					businessId: this.businessId
+				}
+			})
+		},
+
+		async toPayment() {
+			if (!this.deliveryaddress?.id) {
+				alert('请选择送货地址')
+				return
 			}
 
-			// 尝试获取本地存储的送货地址
-			this.deliveryaddress = this.$getLocalStorage(this.user.id) || null;
+			const token = auth.getToken()
+			if (!token) {
+				alert('登录状态已失效，请重新登录')
+				this.$router.push('/login')
+				return
+			}
 
-			// 获取商家信息
-			this.getBusinessDetail();
-
-			// 获取购物车信息
-			this.getCart();
-		},
-		methods: {
-			getBusinessDetail() {
-				this.$axios.get('/api/businesses/getBusinessById', {
-					params: {
-						businessId: this.businessId
-					}
-				}).then(res => {
-					console.log('商家信息返回：', res.data);
-					if (res.data.success) {
-						this.business = res.data.data;
-					}
-				}).catch(err => console.error(err));
-			},
-
-			getCart() {
-				this.$axios.get('/api/carts', {
-					params: {
-						userId: this.user.id,
-						businessId: this.businessId
-					}
-				}).then(res => {
-					console.log('购物车返回：', res.data);
-					let arr = Array.isArray(res.data) ? res.data : (Array.isArray(res.data.data) ? res.data.data :
-						[]);
-					this.cartArr = arr.filter(c => c?.food);
-				}).catch(err => console.error(err));
-			},
-
-			formatSex(value) {
-				return value === 1 ? '先生' : '女士';
-			},
-
-			toUserAddress() {
-				this.$router.push({
-					path: '/userAddress',
-					query: {
-						businessId: this.businessId
-					}
-				});
-			},
-
-			toPayment() {
-				if (!this.deliveryaddress) {
-					alert('请选择送货地址！');
-					return;
-				}
-
-				const token = auth.getToken();
-				console.log('当前 token =', token);
-				if (!token) {
-					alert('登录状态失效，请重新登录');
-					this.$router.push('/login');
-					return;
-				}
-
-				const orderParams = {
-					business: {
-						id: Number(this.businessId)
-					},
-					deliveryAddress: {
-						id: Number(this.deliveryaddress.id)
-					}
-				};
-
-				console.log('准备创建订单 → 请求参数:', orderParams);
-
-				this.$axios.post('/api/orders', orderParams, {
+			try {
+				const response = await this.$axios.post('/api/orders', {
+					userId: this.user.id,
+					businessId: this.businessId,
+					daId: this.deliveryaddress.id,
+					orderTotal: this.totalPrice
+				}, {
 					headers: {
-						'Authorization': `Bearer ${token}`,
+						Authorization: `Bearer ${token}`,
 						'Content-Type': 'application/json'
 					}
-				}).then(res => {
-					console.log('创建订单返回数据:', res.data);
-					const order = res.data.data;
-					if (order && order.id) {
-						console.log('订单创建成功 → 订单ID:', order.id);
-						this.$router.push({
-							path: '/payment',
-							query: {
-								orderId: order.id
-							}
-						});
-					} else {
-						console.warn('创建订单失败 → 返回数据不完整:', res.data);
-						alert('创建订单失败！');
-					}
-				}).catch(error => {
-					console.error('创建订单请求出错:', error);
-					let msg = '创建订单失败，请检查控制台信息';
-					if (error.response?.data?.message) {
-						msg = `创建订单失败: ${error.response.data.message}`;
-					}
-					alert(msg);
-				});
-			}
-		},
-		computed: {
-			totalPrice() {
-				let total = 0;
-				for (let cartItem of this.cartArr) {
-					total += (cartItem?.food?.foodPrice || 0) * (cartItem?.quantity || 0);
+				})
+
+				const orderId = response.data.data
+				if (!response.data.success || !orderId) {
+					alert(response.data.message || '创建订单失败')
+					return
 				}
-				total += this.business?.deliveryPrice || 0;
-				return total;
+
+				this.$router.push({
+					path: '/payment',
+					query: {
+						orderId
+					}
+				})
+			} catch (error) {
+				console.error('Failed to create order:', error)
+				alert(error.response?.data?.message || '创建订单失败')
 			}
 		}
+	},
+	computed: {
+		totalPrice() {
+			let total = 0
+			for (const cartItem of this.cartArr) {
+				total += (cartItem?.food?.foodPrice || 0) * (cartItem?.quantity || 0)
+			}
+			total += this.business?.deliveryPrice || 0
+			return total
+		}
 	}
+}
 </script>
 
-
 <style scoped>
-	/****************** 总容器 ******************/
 	.wrapper {
 		width: 100%;
 		height: 100%;
 	}
 
-	/****************** header部分 ******************/
 	.wrapper header {
 		width: 100%;
 		height: 12vw;
@@ -221,9 +211,7 @@
 		align-items: center;
 	}
 
-	/****************** 订单信息部分 ******************/
 	.wrapper .order-info {
-		/* 注意这里，不设置高，靠内容撑开。因为地址有可能折行 */
 		width: 100%;
 		margin-top: 12vw;
 		background-color: #0097EF;
@@ -269,7 +257,6 @@
 		border-bottom: solid 1px #DDD;
 	}
 
-	/****************** 订单明细部分 ******************/
 	.wrapper .order-detailed {
 		width: 100%;
 	}
@@ -316,7 +303,6 @@
 		font-size: 3.5vw;
 	}
 
-	/****************** 订单合计部分 ******************/
 	.wrapper .total {
 		width: 100%;
 		height: 14vw;

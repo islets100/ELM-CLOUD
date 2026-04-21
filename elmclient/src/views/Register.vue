@@ -116,13 +116,14 @@ export default {
           username: username
         });
 
-        // 注册成功：提示 + 延迟跳转登录页
-        if (response.status === 200) {
+        if (response.data?.success) {
           this.errorMsg = '';
           this.$message?.success('注册成功！初始密码为"password"') || alert('注册成功！初始密码为"password"');
           setTimeout(() => {
             this.$router.push('/login');
           }, 1500);
+        } else {
+          this.errorMsg = response.data?.message || '注册失败，请稍后重试';
         }
       } catch (error) {
         // 错误分类处理：与登录页错误提示逻辑统一

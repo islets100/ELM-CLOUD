@@ -7,5 +7,6 @@ public interface VirtualWalletService {
     BigDecimal getBalance(String userId);
     boolean recharge(String userId, BigDecimal amount);
     boolean pay(String userId, BigDecimal amount);
+    int transfer(String fromUserId, String toUserId, BigDecimal amount);
     boolean repayOverdraft(String userId, BigDecimal amount);
 }

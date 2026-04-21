@@ -1,78 +1,87 @@
 import axios from 'axios'
 import auth from '../utils/auth'
+import walletApi from './wallet.js'
 
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || ''
+
+function getCurrentUserId() {
+	return auth.getUserInfo()?.id
+}
+
+function getAuthHeaders() {
+	return {
+		Authorization: `Bearer ${auth.getToken()}`
+	}
+}
 
 export default {
 	// 购买VIP卡
 	purchaseVipCard(cardType) {
-		return axios.post(`${API_BASE_URL}/api/vip/purchase`, {
-			cardType: cardType
-		}, {
-			headers: {
-				'Authorization': `Bearer ${auth.getToken()}`,
-				'Content-Type': 'application/json'
-			}
+		return axios.post(`${API_BASE_URL}/api/vip/purchase`, null, {
+			params: {
+				userId: getCurrentUserId(),
+				cardType
+			},
+			headers: getAuthHeaders()
 		})
 	},
 
 	// 获取当前有效VIP卡
 	getCurrentVipCard() {
-		return axios.get(`${API_BASE_URL}/api/vip/current`, {
-			headers: {
-				'Authorization': `Bearer ${auth.getToken()}`
+		return Promise.resolve({
+			data: {
+				success: true,
+				data: null,
+				message: '当前后端未提供VIP详情接口'
 			}
 		})
 	},
 
 	// 获取VIP卡历史记录
 	getVipCardHistory() {
-		return axios.get(`${API_BASE_URL}/api/vip/history`, {
-			headers: {
-				'Authorization': `Bearer ${auth.getToken()}`
+		return Promise.resolve({
+			data: {
+				success: true,
+				data: [],
+				message: '当前后端未提供VIP历史接口'
 			}
 		})
 	},
 
 	// 管理员设置透支额度
-	setCreditLimit(userId, creditLimit) {
-		return axios.post(`${API_BASE_URL}/api/vip/credit-limit`, {
-			userId: userId,
-			creditLimit: creditLimit
-		}, {
-			headers: {
-				'Authorization': `Bearer ${auth.getToken()}`,
-				'Content-Type': 'application/json'
+	setCreditLimit() {
+		return Promise.resolve({
+			data: {
+				success: false,
+				data: null,
+				message: '当前后端未提供VIP透支额度管理接口'
 			}
 		})
 	},
 
 	// 透支还款
 	repayOverdraft(amount) {
-		return axios.post(`${API_BASE_URL}/api/vip/repay`, {
-			amount: amount
-		}, {
-			headers: {
-				'Authorization': `Bearer ${auth.getToken()}`,
-				'Content-Type': 'application/json'
-			}
-		})
+		return walletApi.repayOverdraft(amount)
 	},
 
 	// 获取透支记录
 	getOverdraftRecords() {
-		return axios.get(`${API_BASE_URL}/api/vip/overdraft-records`, {
-			headers: {
-				'Authorization': `Bearer ${auth.getToken()}`
+		return Promise.resolve({
+			data: {
+				success: true,
+				data: [],
+				message: '当前后端未提供透支记录接口'
 			}
 		})
 	},
 
 	// 检查VIP状态
 	checkVipStatus() {
-		return axios.get(`${API_BASE_URL}/api/vip/check`, {
-			headers: {
-				'Authorization': `Bearer ${auth.getToken()}`
+		return Promise.resolve({
+			data: {
+				success: true,
+				data: false,
+				message: '当前后端未提供VIP状态检查接口'
 			}
 		})
 	}
