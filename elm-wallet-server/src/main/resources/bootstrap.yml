@@ -1,7 +1,13 @@
 spring:
   cloud:
     config:
-      enabled: false
+      name: elm-wallet-server-1
+      profile: dev
+      label: elm-configs
+      uri: http://localhost:15001
+      discovery:
+        enabled: true
+        service-id: elm-config-server
     bus:
       enabled: false
 

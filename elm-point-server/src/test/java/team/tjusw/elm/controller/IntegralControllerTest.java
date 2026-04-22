@@ -22,7 +22,7 @@ public class IntegralControllerTest {
     @Autowired
     private IntegralService integralService;
 
-    private static final Long TEST_USER_ID = 2001L;
+    private static final String TEST_USER_ID = "user2001";
 
     @Test
     @DisplayName("测试获取用户可用积分 API")
@@ -71,7 +71,7 @@ public class IntegralControllerTest {
     @Test
     @DisplayName("测试用户签到 API - 首次签到")
     void testSignIn_FirstTime() {
-        Long newUser = 3001L;
+        String newUser = "user3001";
 
         // 执行
         Integer pointsAwarded = integralService.signIn(newUser);

@@ -27,7 +27,7 @@ public class IntegralController {
      * 注意：这里暂时使用 userId 参数，实际应该从 token 中获取
      */
     @GetMapping("/available/{userId}")
-    public CommonResult<Integer> getAvailableIntegral(@PathVariable("userId") Long userId) {
+    public CommonResult<Integer> getAvailableIntegral(@PathVariable("userId") String userId) {
         try {
             Integer availableIntegral = integralService.getAvailableIntegral(userId);
             return new CommonResult<>(200, "成功获取可用积分", availableIntegral);
@@ -40,7 +40,7 @@ public class IntegralController {
      * 获取积分明细
      */
     @GetMapping("/details/{userId}")
-    public CommonResult<List<IntegralDTO>> getIntegralDetails(@PathVariable("userId") Long userId) {
+    public CommonResult<List<IntegralDTO>> getIntegralDetails(@PathVariable("userId") String userId) {
         try {
             List<Integral> integrals = integralService.getIntegralDetails(userId);
             List<IntegralDTO> dtos = integrals.stream()
@@ -56,7 +56,7 @@ public class IntegralController {
      * 获取可用积分的详细信息
      */
     @GetMapping("/available-details/{userId}")
-    public CommonResult<List<IntegralDTO>> getAvailableIntegralDetails(@PathVariable("userId") Long userId) {
+    public CommonResult<List<IntegralDTO>> getAvailableIntegralDetails(@PathVariable("userId") String userId) {
         try {
             List<Integral> integrals = integralService.getAvailableIntegralDetails(userId);
             List<IntegralDTO> dtos = integrals.stream()
@@ -72,7 +72,7 @@ public class IntegralController {
      * 手动添加积分（管理员功能）
      */
     @PostMapping("/add")
-    public CommonResult<IntegralDTO> addIntegral(@RequestParam Long userId,
+    public CommonResult<IntegralDTO> addIntegral(@RequestParam String userId,
                                                  @RequestParam Integer amount,
                                                  @RequestParam String channel,
                                                  @RequestParam(required = false) Long businessId,
@@ -92,7 +92,7 @@ public class IntegralController {
      * 消费积分
      */
     @PostMapping("/consume")
-    public CommonResult<List<IntegralDTO>> consumeIntegral(@RequestParam Long userId,
+    public CommonResult<List<IntegralDTO>> consumeIntegral(@RequestParam String userId,
                                                            @RequestParam Integer amount,
                                                            @RequestParam String channel,
                                                            @RequestParam(required = false) Long businessId,
@@ -114,7 +114,7 @@ public class IntegralController {
      * 积分兑换商品
      */
     @PostMapping("/exchange")
-    public CommonResult<List<IntegralDTO>> exchangeGoods(@RequestParam Long userId,
+    public CommonResult<List<IntegralDTO>> exchangeGoods(@RequestParam String userId,
                                                         @RequestParam Long goodsId,
                                                         @RequestParam Integer goodsIntegral) {
         try {
@@ -148,7 +148,7 @@ public class IntegralController {
      * 积分抵扣订单金额
      */
     @PostMapping("/deduct-order")
-    public CommonResult<List<IntegralDTO>> deductOrder(@RequestParam Long userId,
+    public CommonResult<List<IntegralDTO>> deductOrder(@RequestParam String userId,
                                                        @RequestParam Long orderId,
                                                        @RequestParam Double orderAmount,
                                                        @RequestParam Integer integralAmount) {
@@ -171,7 +171,7 @@ public class IntegralController {
      * 用户签到
      */
     @PostMapping("/sign-in/{userId}")
-    public CommonResult<Integer> signIn(@PathVariable("userId") Long userId) {
+    public CommonResult<Integer> signIn(@PathVariable("userId") String userId) {
         try {
             Integer pointsAwarded = integralService.signIn(userId);
             if (pointsAwarded == 0) {
@@ -187,7 +187,7 @@ public class IntegralController {
      * 检查今天是否已签到
      */
     @GetMapping("/sign-in/check/{userId}")
-    public CommonResult<Boolean> checkSignInToday(@PathVariable("userId") Long userId) {
+    public CommonResult<Boolean> checkSignInToday(@PathVariable("userId") String userId) {
         try {
             boolean isSignedIn = integralService.isSignedInToday(userId);
             return new CommonResult<>(200, "成功检查签到状态", isSignedIn);
@@ -205,7 +205,7 @@ public class IntegralController {
      * - 积分有效期 1 年
      */
     @PostMapping("/comment")
-    public CommonResult<Integer> commentEarnIntegral(@RequestParam Long userId,
+    public CommonResult<Integer> commentEarnIntegral(@RequestParam String userId,
                                                     @RequestParam Long orderId,
                                                     @RequestParam String content,
                                                     @RequestParam(defaultValue = "false") boolean hasPicture) {
@@ -231,7 +231,7 @@ public class IntegralController {
      * 获取积分统计信息
      */
     @GetMapping("/statistics/{userId}")
-    public CommonResult<IntegralStatisticsDTO> getIntegralStatistics(@PathVariable("userId") Long userId) {
+    public CommonResult<IntegralStatisticsDTO> getIntegralStatistics(@PathVariable("userId") String userId) {
         try {
             IntegralService.IntegralStatistics statistics = integralService.getIntegralStatistics(userId);
 
@@ -251,7 +251,7 @@ public class IntegralController {
      * 检查用户是否可以领取生日积分
      */
     @GetMapping("/birthday/check/{userId}")
-    public CommonResult<Boolean> checkBirthdayIntegral(@PathVariable("userId") Long userId) {
+    public CommonResult<Boolean> checkBirthdayIntegral(@PathVariable("userId") String userId) {
         try {
             boolean canClaim = integralService.canClaimBirthdayIntegral(userId);
             return new CommonResult<>(200, "成功检查生日积分领取资格", canClaim);
@@ -264,7 +264,7 @@ public class IntegralController {
      * 用户手动领取生日积分
      */
     @PostMapping("/birthday/claim/{userId}")
-    public CommonResult<Integer> claimBirthdayIntegral(@PathVariable("userId") Long userId) {
+    public CommonResult<Integer> claimBirthdayIntegral(@PathVariable("userId") String userId) {
         try {
             Integer claimedIntegral = integralService.claimBirthdayIntegral(userId);
             if (claimedIntegral == 0) {
@@ -280,7 +280,7 @@ public class IntegralController {
      * 根据订单金额发放积分
      */
     @PostMapping("/earn-by-order")
-    public CommonResult<Integer> earnIntegralByOrder(@RequestParam Long userId,
+    public CommonResult<Integer> earnIntegralByOrder(@RequestParam String userId,
                                                      @RequestParam Long orderId,
                                                      @RequestParam Double orderAmount) {
         try {

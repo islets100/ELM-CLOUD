@@ -12,6 +12,7 @@ import 'element-plus/dist/index.css'  // 引入样式
 import 'font-awesome/css/font-awesome.min.css'
 import axios from 'axios'
 import qs from 'qs'
+import { normalizeApiData, normalizeCommonResult } from './utils/apiResult.js'
 import {
 	getCurDate,
 	setSessionStorage,
@@ -25,74 +26,6 @@ import {
 // 设置 axios 的基础 url
 axios.defaults.baseURL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:14000/';
 
-function normalizeApiData(value) {
-	if (Array.isArray(value)) {
-		return value.map(normalizeApiData)
-	}
-
-	if (!value || typeof value !== 'object') {
-		return value
-	}
-
-	const normalized = {}
-	Object.keys(value).forEach(key => {
-		normalized[key] = normalizeApiData(value[key])
-	})
-
-	if (normalized.startPrice == null && normalized.starPrice != null) {
-		normalized.startPrice = normalized.starPrice
-	}
-
-	const looksLikeWallet =
-		normalized.walletId != null ||
-		normalized.balance != null ||
-		normalized.creditLimit != null ||
-		normalized.usedCreditLimit != null
-
-	if (looksLikeWallet) {
-		if (normalized.availableBalance == null && normalized.balance != null) {
-			normalized.availableBalance = normalized.balance
-		}
-
-		if (normalized.frozenAmount == null) {
-			normalized.frozenAmount = 0
-		}
-
-		if (normalized.overdraftAmount == null && normalized.usedCreditLimit != null) {
-			normalized.overdraftAmount = normalized.usedCreditLimit
-		}
-
-		if (normalized.availableCreditLimit == null && normalized.creditLimit != null) {
-			const creditLimit = Number(normalized.creditLimit) || 0
-			const usedCreditLimit = Number(normalized.usedCreditLimit) || 0
-			normalized.availableCreditLimit = Math.max(creditLimit - usedCreditLimit, 0)
-		}
-
-		if (normalized.hasVipPrivilege == null && normalized.creditLimit != null) {
-			normalized.hasVipPrivilege = (Number(normalized.creditLimit) || 0) > 0
-		}
-	}
-
-	if (normalized.orderDetails == null && normalized.list != null) {
-		normalized.orderDetails = normalized.list
-	}
-
-	if (normalized.id == null) {
-		const entityIdKeys = ['orderId', 'businessId', 'foodId', 'daId', 'cartId', 'walletId']
-		for (const key of entityIdKeys) {
-			if (normalized[key] != null) {
-				normalized.id = normalized[key]
-				break
-			}
-		}
-		if (normalized.id == null && normalized.userId != null && normalized.authorities) {
-			normalized.id = normalized.userId
-		}
-	}
-
-	return normalized
-}
-
 // 添加 axios 响应拦截器，统一处理后端 CommonResult 格式
 axios.interceptors.response.use(
 	response => {
@@ -100,22 +33,23 @@ axios.interceptors.response.use(
 
 		// 如果后端返回的是 CommonResult 格式 {code, message, result}
 		// 但不处理登录接口（它直接返回 {id_token}）
-		if (data && typeof data === 'object' && 'code' in data && 'result' in data && !('id_token' in data)) {
-			// 转换为前端期望的格式 {success, data, message}
-			const success = data.code >= 200 && data.code < 300
-			const normalizedResult = normalizeApiData(data.result)
+		if (
+			data &&
+			typeof data === 'object' &&
+			('code' in data || 'result' in data || 'success' in data || 'data' in data) &&
+			!('id_token' in data)
+		) {
 			return {
 				...response,
-				data: {
-					success: success,
-					data: normalizedResult,
-					message: data.message
-				}
+				data: normalizeCommonResult(data)
 			}
 		}
 
-		// 其他情况直接返回原响应（如登录接口返回的 {id_token}）
-		return response
+		// 其他情况保留原结构，但递归修复乱码与字段兼容
+		return {
+			...response,
+			data: normalizeApiData(data)
+		}
 	},
 	error => {
 		// 统一错误处理

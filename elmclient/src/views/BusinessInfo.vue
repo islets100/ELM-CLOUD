@@ -1,66 +1,112 @@
 <template>
 	<div class="wrapper">
-		<header>
+		<header class="page-header">
+			<button class="header-action" type="button" @click="$router.back()">返回</button>
 			<p>商家详情</p>
+			<button class="header-action ghost" type="button" @click="$router.push('/businessList')">分类</button>
 		</header>
-		<div class="business-logo">
-			<img :src="business.businessImg || '../assets/sj01.png'" alt="商家图片">
-		</div>
-		<div class="business-info">
-			<h1>{{ business.businessName }}</h1>
-			<p>&#165;{{ business.startPrice }}起送 &#165;{{ business.deliveryPrice }}配送</p>
-			<p>{{ business.businessExplain }}</p>
-		</div>
-		<ul class="food">
-			<li v-if="foodArr.length === 0" class="empty-food">
+
+		<section class="hero-card">
+			<img :src="heroImage" :alt="business.businessName || '商家图片'">
+			<div class="hero-content">
+				<h1>{{ business.businessName || '商家加载中' }}</h1>
+				<p class="price-line">
+					起送 ¥{{ formatPrice(business.startPrice) }}
+					<span>配送 ¥{{ formatPrice(business.deliveryPrice) }}</span>
+				</p>
+				<p class="explain-line">{{ business.businessExplain || '这家店还没有补充介绍。' }}</p>
+				<span class="remark-tag">{{ business.remarks || '支持在线下单' }}</span>
+			</div>
+		</section>
+
+		<section v-if="loading" class="state-card">
+			<i class="fa fa-spinner fa-spin"></i>
+			<p>正在加载商品...</p>
+		</section>
+
+		<section v-else-if="errorMessage" class="state-card">
+			<i class="fa fa-exclamation-circle"></i>
+			<p>{{ errorMessage }}</p>
+			<button type="button" @click="initData">重新加载</button>
+		</section>
+
+		<ul v-else class="food-list">
+			<li v-if="foodArr.length === 0" class="state-card inline-state">
 				<i class="fa fa-cutlery"></i>
-				<span>暂无商品</span>
+				<p>商家还没有上架商品</p>
 			</li>
-			<li v-for="(item, index) in foodArr" :key="item.id">
+			<li v-for="(item, index) in foodArr" :key="item.id || item.foodId">
 				<div class="food-left">
-					<img :src="item.foodImg || '../assets/default-food.png'" alt="商品图片">
-					<div class="food-left-info">
+					<img :src="getFoodImage(item, index)" :alt="item.foodName">
+					<div class="food-info">
 						<h3>{{ item.foodName }}</h3>
-						<p>{{ item.foodExplain }}</p>
-						<p>&#165;{{ item.foodPrice }}</p>
+						<p>{{ item.foodExplain || '暂无商品介绍' }}</p>
+						<div class="food-bottom">
+							<span>¥{{ formatPrice(item.foodPrice) }}</span>
+							<em>{{ item.remarks || '现做现卖' }}</em>
+						</div>
 					</div>
 				</div>
 				<div class="food-right">
-					<div>
-						<i class="fa fa-minus-circle" @click="minus(index)" v-show="item.quantity !== 0"></i>
-					</div>
-					<p><span v-show="item.quantity !== 0">{{ item.quantity }}</span></p>
-					<div>
-						<i class="fa fa-plus-circle" @click="add(index)"></i>
-					</div>
+					<button type="button" class="icon-btn minus" @click="minus(index)" :disabled="item.quantity === 0">-</button>
+					<strong>{{ item.quantity }}</strong>
+					<button type="button" class="icon-btn plus" @click="add(index)">+</button>
 				</div>
 			</li>
 		</ul>
-		<div class="cart">
-			<div class="cart-left">
-				<div class="cart-left-icon" :style="totalQuantity === 0 ? 'background-color:#505051;' : 'background-color:#3190E8;'">
+
+		<div class="cart-bar">
+			<div class="cart-summary">
+				<div class="cart-icon" :class="{ active: totalQuantity > 0 }">
 					<i class="fa fa-shopping-cart"></i>
-					<div class="cart-left-icon-quantity" v-show="totalQuantity !== 0">{{ totalQuantity }}</div>
+					<span v-if="totalQuantity > 0">{{ totalQuantity }}</span>
 				</div>
-				<div class="cart-left-info">
-					<p>&#165;{{ totalPrice }}</p>
-					<p>另需配送费{{ business.deliveryPrice }}元</p>
-				</div>
-			</div>
-			<div class="cart-right">
-				<div class="cart-right-item" v-show="totalSettle < business.startPrice" style="background-color:#535356;cursor: default;">
-					&#165;{{ business.startPrice }}起送
-				</div>
-				<div class="cart-right-item" @click="toOrder" v-show="totalSettle >= business.startPrice">
-					去结算
+				<div>
+					<p class="cart-total">¥{{ formatPrice(totalPrice) }}</p>
+					<p class="cart-tip">另需配送费 ¥{{ formatPrice(business.deliveryPrice) }}</p>
 				</div>
 			</div>
+			<button
+				type="button"
+				class="checkout-btn"
+				:disabled="totalSettle < Number(business.startPrice || 0)"
+				@click="toOrder"
+			>
+				{{ totalSettle < Number(business.startPrice || 0) ? `还差 ¥${formatDiffPrice}` : '去结算' }}
+			</button>
 		</div>
 	</div>
 </template>
 
 <script>
 import auth from '../utils/auth'
+
+const shopImages = [
+	require('../assets/sj01.png'),
+	require('../assets/sj02.png'),
+	require('../assets/sj03.png'),
+	require('../assets/sj04.png'),
+	require('../assets/sj05.png'),
+	require('../assets/sj06.png'),
+	require('../assets/sj07.png'),
+	require('../assets/sj08.png'),
+	require('../assets/sj09.png')
+]
+
+const foodImages = [
+	require('../assets/sp01.png'),
+	require('../assets/sp02.png'),
+	require('../assets/sp03.png'),
+	require('../assets/sp04.png'),
+	require('../assets/sp05.png'),
+	require('../assets/sp06.png'),
+	require('../assets/sp07.png'),
+	require('../assets/sp08.png'),
+	require('../assets/sp09.png'),
+	require('../assets/sp10.png'),
+	require('../assets/sp11.png'),
+	require('../assets/sp12.png')
+]
 
 export default {
 	name: 'BusinessInfo',
@@ -69,7 +115,32 @@ export default {
 			businessId: Number(this.$route.query.businessId),
 			business: {},
 			foodArr: [],
-			user: null
+			user: null,
+			loading: false,
+			errorMessage: ''
+		}
+	},
+	computed: {
+		heroImage() {
+			if (this.business.businessImg) {
+				return this.business.businessImg
+			}
+
+			const baseIndex = Number(this.business.orderTypeId || this.businessId || 1) - 1
+			return shopImages[((baseIndex % shopImages.length) + shopImages.length) % shopImages.length]
+		},
+		totalPrice() {
+			return this.foodArr.reduce((total, item) => total + Number(item.foodPrice || 0) * Number(item.quantity || 0), 0)
+		},
+		totalQuantity() {
+			return this.foodArr.reduce((quantity, item) => quantity + Number(item.quantity || 0), 0)
+		},
+		totalSettle() {
+			return this.totalPrice + Number(this.business.deliveryPrice || 0)
+		},
+		formatDiffPrice() {
+			const diff = Number(this.business.startPrice || 0) - this.totalSettle
+			return Math.max(diff, 0).toFixed(2)
 		}
 	},
 	created() {
@@ -78,45 +149,63 @@ export default {
 	activated() {
 		this.initData()
 	},
+	watch: {
+		'$route.query.businessId'(newVal) {
+			this.businessId = Number(newVal)
+			this.initData()
+		}
+	},
 	methods: {
+		formatPrice(value) {
+			return Number(value || 0).toFixed(2)
+		},
+
+		getFoodImage(item, index) {
+			if (item.foodImg) {
+				return item.foodImg
+			}
+
+			const seed = Number(item.id || item.foodId || index)
+			return foodImages[seed % foodImages.length]
+		},
+
 		async initData() {
 			this.businessId = Number(this.$route.query.businessId)
 			this.user = auth.getUserInfo()
+			this.loading = true
+			this.errorMessage = ''
 
-			await Promise.all([this.getBusinessDetail(), this.getFoodList()])
-			if (this.user?.id) {
-				await this.loadCart()
+			try {
+				await Promise.all([this.getBusinessDetail(), this.getFoodList()])
+				if (this.user?.id && this.foodArr.length) {
+					await this.loadCart()
+				}
+			} catch (error) {
+				console.error('Failed to initialize business data:', error)
+				this.errorMessage = '商家详情加载失败，请稍后重试'
+			} finally {
+				this.loading = false
 			}
 		},
 
 		async getBusinessDetail() {
-			try {
-				const response = await this.$axios.get(`/api/businesses/${this.businessId}`)
-				if (response.data.success) {
-					this.business = response.data.data || {}
-				}
-			} catch (error) {
-				console.error('Failed to load business detail:', error)
+			const response = await this.$axios.get(`/api/businesses/${this.businessId}`)
+			if (!response.data.success) {
+				throw new Error(response.data.message || 'business load failed')
 			}
+			this.business = response.data.data || {}
 		},
 
 		async getFoodList() {
-			try {
-				const response = await this.$axios.get(`/api/foods/business/${this.businessId}`)
-				if (!response.data.success) {
-					this.foodArr = []
-					return
-				}
-
-				this.foodArr = (response.data.data || []).map(food => ({
-					...food,
-					quantity: 0,
-					foodImg: food.foodImg || 'default.jpg'
-				}))
-			} catch (error) {
-				console.error('Failed to load foods:', error)
-				this.foodArr = []
+			const response = await this.$axios.get(`/api/foods/business/${this.businessId}`)
+			if (!response.data.success) {
+				throw new Error(response.data.message || 'food load failed')
 			}
+
+			this.foodArr = (response.data.data || []).map(food => ({
+				...food,
+				quantity: 0
+			}))
 		},
 
 		async loadCart() {
@@ -128,33 +217,59 @@ export default {
 
 				const quantityMap = {}
 				;(response.data.data || []).forEach(cartItem => {
-					quantityMap[cartItem.foodId] = cartItem.quantity
+					quantityMap[cartItem.foodId] = Number(cartItem.quantity || 0)
 				})
 
 				this.foodArr = this.foodArr.map(item => ({
 					...item,
-					quantity: quantityMap[item.id] || 0
+					quantity: quantityMap[item.id || item.foodId] || 0
 				}))
 			} catch (error) {
 				console.error('Failed to load cart:', error)
 			}
 		},
 
-		add(index) {
-			if (!this.user?.id) {
-				alert('请先登录')
-				this.$router.push('/login')
+		ensureLogin() {
+			if (this.user?.id) {
+				return true
+			}
+
+			alert('请先登录后再加入购物车')
+			this.$router.push({
+				path: '/login',
+				query: {
+					redirect: `/businessInfo?businessId=${this.businessId}`
+				}
+			})
+			return false
+		},
+
+		async add(index) {
+			if (!this.ensureLogin()) {
 				return
 			}
 
 			this.foodArr[index].quantity += 1
-			this.saveCart(index)
+			try {
+				const response = await this.$axios.post('/api/carts', {
+					businessId: this.businessId,
+					userId: this.user.id,
+					foodId: this.foodArr[index].id || this.foodArr[index].foodId,
+					quantity: 1
+				})
+				if (!response.data.success) {
+					this.foodArr[index].quantity -= 1
+					alert(response.data.message || '加入购物车失败')
+				}
+			} catch (error) {
+				console.error('Failed to save cart item:', error)
+				this.foodArr[index].quantity -= 1
+				alert(error.response?.data?.message || '加入购物车失败')
+			}
 		},
 
-		minus(index) {
-			if (!this.user?.id) {
-				alert('请先登录')
-				this.$router.push('/login')
+		async minus(index) {
+			if (!this.ensureLogin()) {
 				return
 			}
 
@@ -163,63 +278,45 @@ export default {
 			}
 
 			this.foodArr[index].quantity -= 1
-			if (this.foodArr[index].quantity === 0) {
-				this.removeCart(index)
-				return
-			}
-			this.updateCart(index, this.foodArr[index].quantity)
-		},
+			const foodId = this.foodArr[index].id || this.foodArr[index].foodId
 
-		async saveCart(index) {
 			try {
-				const response = await this.$axios.post('/api/carts', {
-					businessId: this.businessId,
-					userId: this.user.id,
-					foodId: this.foodArr[index].id,
-					quantity: 1
-				})
-				if (!response.data.success) {
-					this.foodArr[index].quantity -= 1
+				if (this.foodArr[index].quantity === 0) {
+					const response = await this.$axios.delete(`/api/carts/user/${this.user.id}/business/${this.businessId}/food/${foodId}`)
+					if (!response.data.success) {
+						this.foodArr[index].quantity = 1
+						alert(response.data.message || '更新购物车失败')
+					}
+					return
 				}
-			} catch (error) {
-				console.error('Failed to save cart item:', error)
-				this.foodArr[index].quantity -= 1
-			}
-		},
 
-		async updateCart(index, quantity) {
-			try {
 				const response = await this.$axios.put(
-					`/api/carts/user/${this.user.id}/business/${this.businessId}/food/${this.foodArr[index].id}`,
-					{ quantity }
+					`/api/carts/user/${this.user.id}/business/${this.businessId}/food/${foodId}`,
+					{ quantity: this.foodArr[index].quantity }
 				)
 				if (!response.data.success) {
 					this.foodArr[index].quantity += 1
+					alert(response.data.message || '更新购物车失败')
 				}
 			} catch (error) {
 				console.error('Failed to update cart item:', error)
 				this.foodArr[index].quantity += 1
-			}
-		},
-
-		async removeCart(index) {
-			try {
-				const response = await this.$axios.delete(
-					`/api/carts/user/${this.user.id}/business/${this.businessId}/food/${this.foodArr[index].id}`
-				)
-				if (!response.data.success) {
-					this.foodArr[index].quantity = 1
-				}
-			} catch (error) {
-				console.error('Failed to remove cart item:', error)
-				this.foodArr[index].quantity = 1
+				alert(error.response?.data?.message || '更新购物车失败')
 			}
 		},
 
 		toOrder() {
-			if (!this.user?.id) {
-				alert('请先登录')
-				this.$router.push('/login')
+			if (!this.ensureLogin()) {
+				return
+			}
+
+			if (this.totalQuantity === 0) {
+				alert('请先选择商品')
+				return
+			}
+
+			if (this.totalSettle < Number(this.business.startPrice || 0)) {
+				alert(`还差 ¥${this.formatDiffPrice} 才能起送`)
 				return
 			}
 
@@ -230,242 +327,330 @@ export default {
 				}
 			})
 		}
-	},
-	computed: {
-		totalPrice() {
-			return this.foodArr.reduce((total, item) => total + item.foodPrice * item.quantity, 0)
-		},
-		totalQuantity() {
-			return this.foodArr.reduce((quantity, item) => quantity + item.quantity, 0)
-		},
-		totalSettle() {
-			return this.totalPrice + (this.business.deliveryPrice || 0)
-		}
 	}
 }
 </script>
 
 <style scoped>
-	.wrapper {
-		width: 100%;
-		min-height: 100vh;
-		background-color: #f5f5f5;
-	}
+.wrapper {
+	width: 100%;
+	min-height: 100vh;
+	padding-bottom: 18vw;
+	background: linear-gradient(180deg, #eef7ff 0, #f7f7f7 22vw, #f5f5f5 100%);
+}
 
-	.wrapper header {
-		width: 100%;
-		height: 12vw;
-		background-color: #0097FF;
-		color: #fff;
-		font-size: 4.8vw;
-		position: fixed;
-		left: 0;
-		top: 0;
-		z-index: 1000;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
+.page-header {
+	width: 100%;
+	height: 14vw;
+	padding: 0 3vw;
+	box-sizing: border-box;
+	background-color: #0097ff;
+	color: #fff;
+	position: sticky;
+	top: 0;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
 
-	.wrapper .business-logo {
-		width: 100%;
-		padding-top: 12vw;
-	}
+.page-header p {
+	margin: 0;
+	font-size: 4.6vw;
+	font-weight: 700;
+}
 
-	.wrapper .business-logo img {
-		width: 100%;
-		height: 30vw;
-		object-fit: cover;
-	}
+.header-action {
+	border: none;
+	background: rgba(255, 255, 255, 0.18);
+	color: #fff;
+	border-radius: 999px;
+	padding: 1.4vw 3vw;
+	font-size: 3.2vw;
+}
 
-	.wrapper .business-info {
-		width: 100%;
-		padding: 3vw;
-		background-color: white;
-		border-bottom: 1px solid #f5f5f5;
-	}
+.header-action.ghost {
+	background: transparent;
+	border: 1px solid rgba(255, 255, 255, 0.35);
+}
 
-	.wrapper .business-info h1 {
-		font-size: 4.5vw;
-		color: #333;
-		margin: 0 0 2vw;
-	}
+.hero-card {
+	margin: 4vw;
+	border-radius: 4vw;
+	overflow: hidden;
+	background-color: #fff;
+	box-shadow: 0 1.5vw 4vw rgba(15, 58, 109, 0.08);
+}
 
-	.wrapper .business-info p {
-		font-size: 3.2vw;
-		color: #666;
-		margin: 1vw 0;
-		line-height: 1.5;
-	}
+.hero-card img {
+	width: 100%;
+	height: 36vw;
+	object-fit: cover;
+	background-color: #eef4f9;
+}
 
-	.wrapper .food {
-		width: 100%;
-		list-style: none;
-		padding: 0;
-		margin: 0 0 14vw 0;
-	}
+.hero-content {
+	padding: 4vw;
+}
 
-	.wrapper .food .empty-food {
-		width: 100%;
-		height: 40vw;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		background-color: white;
-		margin-top: 2vw;
-	}
+.hero-content h1 {
+	margin: 0 0 1.6vw;
+	font-size: 5vw;
+	color: #213547;
+}
 
-	.wrapper .food .empty-food i {
-		font-size: 12vw;
-		color: #ddd;
-		margin-bottom: 2vw;
-	}
+.price-line {
+	margin: 0 0 1.4vw;
+	font-size: 3.2vw;
+	color: #ff7a45;
+}
 
-	.wrapper .food .empty-food span {
-		font-size: 3.5vw;
-		color: #999;
-	}
+.price-line span {
+	margin-left: 2vw;
+	color: #607080;
+}
 
-	.wrapper .food li {
-		width: 100%;
-		box-sizing: border-box;
-		padding: 2.5vw;
-		user-select: none;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		background-color: white;
-		border-bottom: 1px solid #f5f5f5;
-	}
+.explain-line {
+	margin: 0 0 2vw;
+	font-size: 3.2vw;
+	line-height: 1.6;
+	color: #667788;
+}
 
-	.wrapper .food li .food-left {
-		display: flex;
-		align-items: center;
-	}
+.remark-tag {
+	display: inline-flex;
+	align-items: center;
+	padding: 1vw 2vw;
+	border-radius: 999px;
+	background-color: #eef7ff;
+	color: #0097ff;
+	font-size: 2.8vw;
+}
 
-	.wrapper .food li .food-left img {
-		width: 20vw;
-		height: 20vw;
-		border-radius: 2vw;
-		object-fit: cover;
-	}
+.food-list {
+	margin: 0;
+	padding: 0 4vw;
+	list-style: none;
+}
 
-	.wrapper .food li .food-left .food-left-info {
-		margin-left: 3vw;
-	}
+.food-list li {
+	margin-bottom: 3vw;
+	padding: 3.5vw;
+	border-radius: 4vw;
+	background-color: #fff;
+	box-shadow: 0 1.5vw 4vw rgba(15, 58, 109, 0.06);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 3vw;
+}
 
-	.wrapper .food li .food-left .food-left-info h3 {
-		font-size: 3.8vw;
-		color: #555;
-		margin: 0 0 1vw;
-	}
+.food-left {
+	display: flex;
+	align-items: center;
+	gap: 3vw;
+	flex: 1;
+	min-width: 0;
+}
 
-	.wrapper .food li .food-left .food-left-info p {
-		font-size: 3vw;
-		color: #888;
-		margin: 0;
-		line-height: 1.4;
-	}
+.food-left img {
+	width: 18vw;
+	height: 18vw;
+	border-radius: 3vw;
+	object-fit: cover;
+	background-color: #eef4f9;
+}
 
-	.wrapper .food li .food-right {
-		width: 16vw;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
+.food-info {
+	flex: 1;
+	min-width: 0;
+}
 
-	.wrapper .food li .food-right .fa-minus-circle {
-		font-size: 5.5vw;
-		color: #999;
-		cursor: pointer;
-	}
+.food-info h3 {
+	margin: 0 0 1vw;
+	font-size: 3.8vw;
+	color: #213547;
+}
 
-	.wrapper .food li .food-right p {
-		font-size: 3.6vw;
-		color: #333;
-		margin: 0;
-	}
+.food-info p {
+	margin: 0 0 1.6vw;
+	font-size: 3vw;
+	line-height: 1.5;
+	color: #6b7a89;
+}
 
-	.wrapper .food li .food-right .fa-plus-circle {
-		font-size: 5.5vw;
-		color: #0097EF;
-		cursor: pointer;
-	}
+.food-bottom {
+	display: flex;
+	align-items: center;
+	gap: 2vw;
+	flex-wrap: wrap;
+}
 
-	.wrapper .cart {
-		width: 100%;
-		height: 14vw;
-		position: fixed;
-		left: 0;
-		bottom: 0;
-		display: flex;
-	}
+.food-bottom span {
+	font-size: 3.6vw;
+	font-weight: 700;
+	color: #ff6b35;
+}
 
-	.wrapper .cart .cart-left {
-		flex: 2;
-		background-color: #505051;
-		display: flex;
-		align-items: center;
-		padding-left: 2vw;
-	}
+.food-bottom em {
+	font-style: normal;
+	font-size: 2.8vw;
+	color: #0097ff;
+	background-color: #eef7ff;
+	border-radius: 999px;
+	padding: 0.6vw 1.6vw;
+}
 
-	.wrapper .cart .cart-left .cart-left-icon {
-		width: 16vw;
-		height: 16vw;
-		background-color: #3190E8;
-		border-radius: 50%;
-		position: relative;
-		top: -4vw;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		color: white;
-		font-size: 6vw;
-	}
+.food-right {
+	display: flex;
+	align-items: center;
+	gap: 2vw;
+}
 
-	.wrapper .cart .cart-left .cart-left-icon .cart-left-icon-quantity {
-		width: 5vw;
-		height: 5vw;
-		background-color: #FF5A5F;
-		border-radius: 50%;
-		position: absolute;
-		right: 1vw;
-		top: 1vw;
-		font-size: 3vw;
-		color: white;
-		text-align: center;
-		line-height: 5vw;
-	}
+.food-right strong {
+	min-width: 4vw;
+	text-align: center;
+	font-size: 3.6vw;
+	color: #213547;
+}
 
-	.wrapper .cart .cart-left .cart-left-info {
-		margin-left: 2vw;
-		color: white;
-	}
+.icon-btn {
+	width: 7vw;
+	height: 7vw;
+	border: none;
+	border-radius: 50%;
+	font-size: 4.5vw;
+	line-height: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
 
-	.wrapper .cart .cart-left .cart-left-info p:first-child {
-		font-size: 4vw;
-		margin: 0 0 1vw 0;
-	}
+.icon-btn.plus {
+	background-color: #0097ff;
+	color: #fff;
+}
 
-	.wrapper .cart .cart-left .cart-left-info p:last-child {
-		font-size: 2.8vw;
-		margin: 0;
-		color: #ccc;
-	}
+.icon-btn.minus {
+	background-color: #eef1f4;
+	color: #607080;
+}
 
-	.wrapper .cart .cart-right {
-		flex: 1;
-	}
+.icon-btn:disabled {
+	opacity: 0.5;
+}
 
-	.wrapper .cart .cart-right .cart-right-item {
-		width: 100%;
-		height: 100%;
-		background-color: #0097FF;
-		color: white;
-		font-size: 4vw;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
+.cart-bar {
+	width: 100%;
+	height: 15vw;
+	padding: 0 3vw;
+	box-sizing: border-box;
+	background-color: #1f2d3d;
+	position: fixed;
+	left: 0;
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.cart-summary {
+	display: flex;
+	align-items: center;
+	gap: 3vw;
+	color: #fff;
+}
+
+.cart-icon {
+	width: 13vw;
+	height: 13vw;
+	border-radius: 50%;
+	background-color: #4a5560;
+	position: relative;
+	top: -2vw;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 5vw;
+}
+
+.cart-icon.active {
+	background-color: #0097ff;
+}
+
+.cart-icon span {
+	min-width: 5vw;
+	height: 5vw;
+	padding: 0 1vw;
+	border-radius: 999px;
+	background-color: #ff5a5f;
+	font-size: 2.8vw;
+	position: absolute;
+	right: -0.8vw;
+	top: -0.6vw;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.cart-total {
+	margin: 0 0 0.8vw;
+	font-size: 4.2vw;
+	font-weight: 700;
+}
+
+.cart-tip {
+	margin: 0;
+	font-size: 2.8vw;
+	color: rgba(255, 255, 255, 0.72);
+}
+
+.checkout-btn {
+	min-width: 28vw;
+	height: 10vw;
+	border: none;
+	border-radius: 999px;
+	background: linear-gradient(135deg, #1ac97a, #29b765);
+	color: #fff;
+	font-size: 3.8vw;
+	font-weight: 700;
+}
+
+.checkout-btn:disabled {
+	background: #4a5560;
+	color: rgba(255, 255, 255, 0.7);
+}
+
+.state-card {
+	margin: 4vw;
+	padding: 12vw 6vw;
+	border-radius: 4vw;
+	background-color: #fff;
+	box-shadow: 0 1.5vw 4vw rgba(15, 58, 109, 0.06);
+	text-align: center;
+	color: #7b8a97;
+}
+
+.state-card i {
+	font-size: 12vw;
+	color: #c8d3dd;
+}
+
+.state-card p {
+	margin: 3vw 0;
+	font-size: 3.6vw;
+}
+
+.state-card button {
+	border: none;
+	background-color: #0097ff;
+	color: #fff;
+	border-radius: 999px;
+	padding: 2vw 5vw;
+	font-size: 3.2vw;
+}
+
+.inline-state {
+	display: block;
+}
 </style>

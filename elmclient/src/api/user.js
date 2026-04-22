@@ -1,5 +1,5 @@
 import axios from 'axios'
-import auth from '@/utils/auth.js'
+import auth from '../utils/auth.js'
 
 export default {
 	updateUserInfo(userId, username, birthday) {
@@ -12,14 +12,15 @@ export default {
 			}
 		})
 	},
-	 updatePassword(loginDto) {
-		    return axios.post('/api/password', loginDto, {
-		      headers: {
-		        'Authorization': `Bearer ${auth.getToken()}`,
-		        'Content-Type': 'application/json'
-		      }
-		    })
-		  },
+
+	updatePassword(loginDto) {
+		return axios.post('/api/password', loginDto, {
+			headers: {
+				'Authorization': `Bearer ${auth.getToken()}`,
+				'Content-Type': 'application/json'
+			}
+		})
+	},
 
 	// 检查用户是否可以修改生日
 	checkBirthdayModification() {

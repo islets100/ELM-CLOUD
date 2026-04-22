@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
  */
 public class IntegralDTO {
     private Integer id;
-    private Long userId;
+    private String userId;
     private Integer amount;
     private String type;
     private String status;
@@ -27,11 +27,11 @@ public class IntegralDTO {
         this.id = id;
     }
 
-    public Long getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
 

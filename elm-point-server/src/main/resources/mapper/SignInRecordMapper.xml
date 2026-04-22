@@ -19,7 +19,7 @@
     </insert>
 
     <!-- 根据用户ID查询最近一次签到记录 -->
-    <select id="findTopByUserIdOrderBySignDateDesc" parameterType="long" resultMap="SignInRecordResultMap">
+    <select id="findTopByUserIdOrderBySignDateDesc" parameterType="string" resultMap="SignInRecordResultMap">
         SELECT * FROM sign_in_records
         WHERE user_id = #{userId}
         ORDER BY sign_date DESC

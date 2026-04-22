@@ -3,6 +3,7 @@ package team.tjusw.elm.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import team.tjusw.elm.service.VirtualWalletService;
 import team.tjusw.elm.po.CommonResult;
 import team.tjusw.elm.po.VirtualWalletPO;
@@ -43,12 +44,14 @@ public class VirtualWalletController {
             String[] parts = token.split("\\.");
             if (parts.length < 2) return null;
 
-            String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
+            String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
             // 简单解析，实际应使用JWT库
             if (payload.contains("\"sub\":\"")) {
-                int start = payload.indexOf("\"sub\":\"") + 6;
+                int start = payload.indexOf("\"sub\":\"") + 7;
                 int end = payload.indexOf("\"", start);
-                return payload.substring(start, end);
+                if (end > start) {
+                    return payload.substring(start, end);
+                }
             }
         } catch (Exception e) {
             // 忽略解析错误

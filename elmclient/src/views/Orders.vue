@@ -93,7 +93,7 @@ export default {
 				}
 
 				this.foodMap = (response.data.data || []).reduce((map, food) => {
-					map[food.id] = food
+					map[food.id || food.foodId] = food
 					return map
 				}, {})
 			} catch (error) {

@@ -6,9 +6,6 @@ spring:
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
-  cloud:
-    config:
-      enabled: false
 
 server:
   port: 10500

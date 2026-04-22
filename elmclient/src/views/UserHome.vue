@@ -44,18 +44,13 @@
 			};
 		},
 		created() {
-			// 获取用户信息
-			let u = auth.getUserInfo();
-			if (!u) {
-				u = {
-					userId: '123456',
-					username: '测试用户', // 也改成 username
-					userImg: ''
-				};
-				auth.setUserInfo(u);
+			const user = auth.getUserInfo();
+			if (!user) {
+				return;
 			}
-			this.username = u.username;
-			this.avatarUrl = u.userImg || this.avatarUrl;
+
+			this.username = user.username || user.userName || user.userId || user.id || '';
+			this.avatarUrl = user.userImg || this.avatarUrl;
 		},
 		components: {
 			Footer

@@ -55,6 +55,7 @@
 	import Footer from '../components/Footer.vue';
 	import auth from '../utils/auth';
 	import axios from 'axios';
+	import { resolvePostLoginPath } from '../router/routeAccess';
 
 	export default {
 		name: 'Login',
@@ -73,7 +74,7 @@
 		created() {
 			// 如果已登录，直接根据权限跳转
 			if (auth.isLoggedIn()) {
-				this.redirectByAuthority();
+				this.redirectToAuthorizedHome();
 			}
 		},
 		methods: {
@@ -136,7 +137,7 @@
 					auth.setUserInfo(userInfo);
 
 					// 6. 根据权限跳转
-					this.redirectByAuthority();
+					this.redirectToAuthorizedHome();
 
 				} catch (error) {
 					console.error('登录过程出错:', error);
@@ -179,6 +180,17 @@
 			},
 
 			// 跳转到注册页面
+			redirectToAuthorizedHome() {
+				const user = auth.getUserInfo();
+				if (!user) return;
+
+				const redirectPath = this.$route.query.redirect ?
+					decodeURIComponent(this.$route.query.redirect) :
+					'/index';
+
+				this.$router.push(resolvePostLoginPath(user, redirectPath));
+			},
+
 			goToRegister() {
 				this.$router.push('/register');
 			},

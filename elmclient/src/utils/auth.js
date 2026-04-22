@@ -3,6 +3,7 @@ import {
 	setLocalStorage,
 	removeLocalStorage
 } from '../common.js'
+import { normalizeUserInfoShape } from './apiResult.js'
 
 const TOKEN_KEY = 'token' // 通用令牌 key
 const USER_INFO_KEY = 'user_info' // 通用用户信息 key
@@ -25,11 +26,11 @@ export default {
 
 	// ===================== 用户信息操作 =====================
 	setUserInfo(info) {
-		setLocalStorage(USER_INFO_KEY, info)
+		setLocalStorage(USER_INFO_KEY, normalizeUserInfoShape(info))
 	},
 
 	getUserInfo() {
-		return getLocalStorage(USER_INFO_KEY)
+		return normalizeUserInfoShape(getLocalStorage(USER_INFO_KEY))
 	},
 
 	removeUserInfo() {

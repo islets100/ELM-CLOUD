@@ -45,7 +45,7 @@ public class PromotionDayServiceImpl implements PromotionDayService {
     }
 
     @Override
-    public boolean canClaimRedPacket(Long userId) {
+    public boolean canClaimRedPacket(String userId) {
         // 检查今天是否是促销日
         if (!isTodayPromotionDay()) {
             logger.info("今天不是促销日，用户 {} 无法领取红包", userId);
@@ -69,7 +69,7 @@ public class PromotionDayServiceImpl implements PromotionDayService {
     }
 
     @Override
-    public Integer claimRedPacket(Long userId) {
+    public Integer claimRedPacket(String userId) {
         // 检查是否可以领取
         if (!canClaimRedPacket(userId)) {
             return 0;
@@ -92,7 +92,7 @@ public class PromotionDayServiceImpl implements PromotionDayService {
     }
 
     @Override
-    public List<Object> getRedPacketRecords(Long userId) {
+    public List<Object> getRedPacketRecords(String userId) {
         // 查询所有积分记录
         List<Integral> allIntegrals = integralMapper.selectByUserIdOrderByCreateTimeDesc(userId);
 

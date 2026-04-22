@@ -166,4 +166,28 @@ public class OrdersServiceTest {
 
 		assertEquals(1, result);
 	}
+
+	@Test
+	@DisplayName("pay by wallet should reject already paid order")
+	void testPayByVirtualWalletAlreadyPaid() {
+		LinkedHashMap<String, Object> business = new LinkedHashMap<>();
+		business.put("userId", "merchant1001");
+
+		when(businessClient.getBusinessById(10)).thenReturn((CommonResult) new CommonResult<>(200, "ok", business));
+		when(virtualWalletClient.getBalanceByUserId("user1001"))
+				.thenReturn(new CommonResult<>(200, "ok", new BigDecimal("100.00")));
+		when(pointClient.getBalanceByUserId("user1001")).thenReturn(new CommonResult<>(200, "ok", 500));
+		when(pointClient.getDeductedAmount(1, 50))
+				.thenReturn(new CommonResult<>(200, "ok", new BigDecimal("0.50")));
+		when(virtualWalletClient.transfer("user1001", "merchant1001", new BigDecimal("23.00")))
+				.thenReturn(new CommonResult<>(200, "ok", 1));
+		when(pointClient.earnPointByOrder(1)).thenReturn(new CommonResult<>(200, "ok", 1));
+		when(pointClient.deductOrder(1, 50)).thenReturn(new CommonResult<>(200, "ok", 1));
+
+		Integer firstPayment = ordersService.payByVirtualWallet("user1001", 1, 50);
+		Integer secondPayment = ordersService.payByVirtualWallet("user1001", 1, 50);
+
+		assertEquals(200, firstPayment);
+		assertEquals(3, secondPayment);
+	}
 }

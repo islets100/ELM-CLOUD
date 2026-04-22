@@ -25,7 +25,7 @@ public class IntegralServiceTest {
     @Autowired
     private IntegralService integralService;
 
-    private static final Long TEST_USER_ID = 1001L;
+    private static final String TEST_USER_ID = "user1001";
 
     @Test
     @DisplayName("测试增加积分")
@@ -110,7 +110,7 @@ public class IntegralServiceTest {
     @DisplayName("测试用户签到 - 首次签到")
     void testSignIn_FirstTime() {
         // 使用不同的用户ID避免冲突
-        Long newUser = 1002L;
+        String newUser = "user1002";
 
         // 执行
         Integer pointsAwarded = integralService.signIn(newUser);

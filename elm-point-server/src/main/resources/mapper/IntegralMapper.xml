@@ -40,7 +40,7 @@
     </select>
 
     <!-- 根据用户ID查询所有积分记录，按创建时间倒序 -->
-    <select id="selectByUserIdOrderByCreateTimeDesc" parameterType="long" resultMap="IntegralResultMap">
+    <select id="selectByUserIdOrderByCreateTimeDesc" parameterType="string" resultMap="IntegralResultMap">
         SELECT * FROM integral WHERE user_id = #{userId} ORDER BY create_time DESC
     </select>
 

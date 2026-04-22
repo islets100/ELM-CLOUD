@@ -1,5 +1,5 @@
 import axios from 'axios'
-import auth from '../utils/auth'
+import auth from '../utils/auth.js'
 
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || ''
 

@@ -1,10 +1,11 @@
 import axios from 'axios'
-import auth from '../utils/auth'
+import auth from '../utils/auth.js'
+import { normalizeAxiosResult, resolveUserId } from '../utils/apiResult.js'
 
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || ''
 
 function getCurrentUserId() {
-	return auth.getUserInfo()?.id
+	return resolveUserId(auth.getUserInfo())
 }
 
 function getAuthHeaders() {
@@ -26,20 +27,20 @@ function unsupported(message) {
 export default {
 	// 获取钱包信息
 	getWallet() {
-		return axios.get(`${API_BASE_URL}/api/wallet`, {
+		return normalizeAxiosResult(axios.get(`${API_BASE_URL}/api/wallet`, {
 			headers: getAuthHeaders()
-		})
+		}))
 	},
 
 	// 充值
 	recharge(amount) {
-		return axios.post(`${API_BASE_URL}/api/wallet/recharge`, null, {
+		return normalizeAxiosResult(axios.post(`${API_BASE_URL}/api/wallet/recharge`, null, {
 			params: {
 				userId: getCurrentUserId(),
 				amount
 			},
 			headers: getAuthHeaders()
-		})
+		}))
 	},
 
 	// 提现
@@ -50,23 +51,23 @@ export default {
 	// 支付/转账
 	pay(toUserId, amount) {
 		if (toUserId) {
-			return axios.post(`${API_BASE_URL}/api/wallet/transfer`, null, {
+			return normalizeAxiosResult(axios.post(`${API_BASE_URL}/api/wallet/transfer`, null, {
 				params: {
 					fromUserId: getCurrentUserId(),
 					toUserId,
 					amount
 				},
 				headers: getAuthHeaders()
-			})
+			}))
 		}
 
-		return axios.post(`${API_BASE_URL}/api/wallet/pay`, null, {
+		return normalizeAxiosResult(axios.post(`${API_BASE_URL}/api/wallet/pay`, null, {
 			params: {
 				userId: getCurrentUserId(),
 				amount
 			},
 			headers: getAuthHeaders()
-		})
+		}))
 	},
 
 	// 查询交易流水
@@ -96,13 +97,13 @@ export default {
 	},
 
 	repayOverdraft(amount) {
-		return axios.post(`${API_BASE_URL}/api/wallet/repayOverdraft`, null, {
+		return normalizeAxiosResult(axios.post(`${API_BASE_URL}/api/wallet/repayOverdraft`, null, {
 			params: {
 				userId: getCurrentUserId(),
 				amount
 			},
 			headers: getAuthHeaders()
-		})
+		}))
 	}
 }
 

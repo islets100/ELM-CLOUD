@@ -31,17 +31,17 @@ public interface IntegralMapper {
     /**
      * 根据用户ID查询所有积分记录，按创建时间倒序
      */
-    List<Integral> selectByUserIdOrderByCreateTimeDesc(@Param("userId") Long userId);
+    List<Integral> selectByUserIdOrderByCreateTimeDesc(@Param("userId") String userId);
 
     /**
      * 根据用户ID和状态查询积分记录，按过期时间升序
      */
-    List<Integral> selectByUserIdAndStatusOrderByExpireTimeAsc(@Param("userId") Long userId, @Param("status") String status);
+    List<Integral> selectByUserIdAndStatusOrderByExpireTimeAsc(@Param("userId") String userId, @Param("status") String status);
 
     /**
      * 根据用户ID、状态和过期时间查询积分记录
      */
-    List<Integral> selectByUserIdAndStatusAndExpireTimeAfter(@Param("userId") Long userId, @Param("status") String status, @Param("expireTime") LocalDateTime expireTime);
+    List<Integral> selectByUserIdAndStatusAndExpireTimeAfter(@Param("userId") String userId, @Param("status") String status, @Param("expireTime") LocalDateTime expireTime);
 
     /**
      * 查询过期的积分记录
@@ -51,5 +51,5 @@ public interface IntegralMapper {
     /**
      * 查询用户可用积分总和
      */
-    Integer sumAmountByUserIdAndStatusAndExpireTimeAfter(@Param("userId") Long userId, @Param("status") String status, @Param("expireTime") LocalDateTime expireTime);
+    Integer sumAmountByUserIdAndStatusAndExpireTimeAfter(@Param("userId") String userId, @Param("status") String status, @Param("expireTime") LocalDateTime expireTime);
 }

@@ -7,7 +7,7 @@ import java.time.LocalDate;
  */
 public class SignInRecord {
     private Integer id;
-    private Long userId;
+    private String userId;
     private LocalDate signDate;
     private Integer consecutiveDays;
     private Integer pointsAwarded;
@@ -15,7 +15,7 @@ public class SignInRecord {
     public SignInRecord() {
     }
 
-    public SignInRecord(Long userId, LocalDate signDate, Integer consecutiveDays, Integer pointsAwarded) {
+    public SignInRecord(String userId, LocalDate signDate, Integer consecutiveDays, Integer pointsAwarded) {
         this.userId = userId;
         this.signDate = signDate;
         this.consecutiveDays = consecutiveDays;
@@ -31,11 +31,11 @@ public class SignInRecord {
         this.id = id;
     }
 
-    public Long getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
 

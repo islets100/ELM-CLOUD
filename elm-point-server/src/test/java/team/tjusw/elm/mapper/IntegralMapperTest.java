@@ -25,7 +25,7 @@ public class IntegralMapperTest {
     @Autowired
     private IntegralMapper integralMapper;
 
-    private static final Long TEST_USER_ID = 3001L;
+    private static final String TEST_USER_ID = "user3001";
 
     @Test
     @DisplayName("测试插入积分记录")
@@ -163,8 +163,8 @@ public class IntegralMapperTest {
     @Test
     @DisplayName("测试多用户数据隔离")
     void testMultiUserDataIsolation() {
-        Long user1 = 3001L;
-        Long user2 = 3002L;
+        String user1 = "user3001";
+        String user2 = "user3002";
 
         // 为两个用户分别插入积分
         integralMapper.insert(new Integral(user1, 100, Integral.TYPE_INCREASE,

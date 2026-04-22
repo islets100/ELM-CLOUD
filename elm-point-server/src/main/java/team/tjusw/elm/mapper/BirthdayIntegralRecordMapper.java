@@ -20,10 +20,10 @@ public interface BirthdayIntegralRecordMapper {
     /**
      * 根据用户ID和记录日期查询
      */
-    BirthdayIntegralRecord findByUserIdAndRecordDate(@Param("userId") Long userId, @Param("recordDate") LocalDate recordDate);
+    BirthdayIntegralRecord findByUserIdAndRecordDate(@Param("userId") String userId, @Param("recordDate") LocalDate recordDate);
 
     /**
      * 检查指定用户和日期的记录是否存在
      */
-    boolean existsByUserIdAndRecordDate(@Param("userId") Long userId, @Param("recordDate") LocalDate recordDate);
+    boolean existsByUserIdAndRecordDate(@Param("userId") String userId, @Param("recordDate") LocalDate recordDate);
 }

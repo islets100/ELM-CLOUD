@@ -35,7 +35,7 @@ public class PromotionDayController {
      * 检查是否可以领取红包
      */
     @GetMapping("/red-packet/check")
-    public CommonResult<Boolean> checkCanClaimRedPacket(@RequestParam("userId") Long userId) {
+    public CommonResult<Boolean> checkCanClaimRedPacket(@RequestParam("userId") String userId) {
         try {
             boolean canClaim = promotionDayService.canClaimRedPacket(userId);
             return new CommonResult<>(200, "成功检查是否可以领取红包", canClaim);
@@ -48,7 +48,7 @@ public class PromotionDayController {
      * 领取红包
      */
     @PostMapping("/red-packet/claim")
-    public CommonResult<Integer> claimRedPacket(@RequestParam("userId") Long userId) {
+    public CommonResult<Integer> claimRedPacket(@RequestParam("userId") String userId) {
         try {
             Integer amount = promotionDayService.claimRedPacket(userId);
             if (amount == 0) {
@@ -64,7 +64,7 @@ public class PromotionDayController {
      * 获取红包领取记录
      */
     @GetMapping("/red-packet/records")
-    public CommonResult<List<Object>> getRedPacketRecords(@RequestParam("userId") Long userId) {
+    public CommonResult<List<Object>> getRedPacketRecords(@RequestParam("userId") String userId) {
         try {
             List<Object> records = promotionDayService.getRedPacketRecords(userId);
             return new CommonResult<>(200, "成功获取红包领取记录", records);

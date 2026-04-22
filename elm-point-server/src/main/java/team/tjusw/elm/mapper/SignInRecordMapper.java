@@ -20,10 +20,10 @@ public interface SignInRecordMapper {
     /**
      * 根据用户ID查询签到记录，按签到日期倒序
      */
-    SignInRecord findTopByUserIdOrderBySignDateDesc(@Param("userId") Long userId);
+    SignInRecord findTopByUserIdOrderBySignDateDesc(@Param("userId") String userId);
 
     /**
      * 查询用户今天的签到记录
      */
-    SignInRecord findTodaySignIn(@Param("userId") Long userId, @Param("signDate") LocalDate signDate);
+    SignInRecord findTodaySignIn(@Param("userId") String userId, @Param("signDate") LocalDate signDate);
 }

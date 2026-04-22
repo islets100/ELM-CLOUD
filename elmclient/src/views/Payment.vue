@@ -97,6 +97,18 @@
 <script>
 import Footer from '../components/Footer.vue'
 import auth from '../utils/auth'
+import {
+	calculateDeductionAmount,
+	calculateFinalAmount,
+	calculateMaxPointsCanUse,
+	normalizePointsToUse
+} from '../utils/payment'
+import {
+	attachFoodsToOrderDetails,
+	buildFoodMap,
+	collectFoodIds,
+	normalizeOrderForDisplay
+} from '../utils/paymentOrder'
 
 export default {
 	name: 'Payment',
@@ -120,21 +132,16 @@ export default {
 	},
 	computed: {
 		maxPointsCanUse() {
-			const maxByOrder = Math.floor((this.orders.orderTotal || 0) * 100)
-			return Math.min(this.availablePoints, maxByOrder)
+			return calculateMaxPointsCanUse(this.orders.orderTotal, this.availablePoints)
 		},
 		maxDeductionAmount() {
-			return this.maxPointsCanUse / 100
+			return calculateDeductionAmount(true, this.maxPointsCanUse)
 		},
 		currentDeductionAmount() {
-			if (!this.usePoints || this.pointsToUse <= 0) {
-				return 0
-			}
-			return this.pointsToUse / 100
+			return calculateDeductionAmount(this.usePoints, this.pointsToUse)
 		},
 		finalAmount() {
-			const final = (this.orders.orderTotal || 0) - this.currentDeductionAmount
-			return Math.max(final, 0)
+			return calculateFinalAmount(this.orders.orderTotal, this.currentDeductionAmount)
 		}
 	},
 	async created() {
@@ -167,11 +174,7 @@ export default {
 					return
 				}
 
-				this.orders = {
-					...response.data.data,
-					business: {},
-					orderDetails: response.data.data?.orderDetails || []
-				}
+				this.orders = normalizeOrderForDisplay(response.data.data)
 
 				await Promise.all([this.loadBusiness(), this.loadOrderFoods()])
 			} catch (error) {
@@ -196,24 +199,15 @@ export default {
 
 		async loadOrderFoods() {
 			const detailList = this.orders.orderDetails || []
-			const foodIds = [...new Set(detailList.map(item => item.foodId).filter(Boolean))]
+			const foodIds = collectFoodIds(detailList)
 			if (!foodIds.length) {
 				return
 			}
 
 			try {
 				const responses = await Promise.all(foodIds.map(foodId => this.$axios.get(`/api/foods/${foodId}`)))
-				const foodMap = {}
-				responses.forEach(response => {
-					if (response.data.success && response.data.data) {
-						foodMap[response.data.data.id] = response.data.data
-					}
-				})
-
-				this.orders.orderDetails = detailList.map(item => ({
-					...item,
-					food: foodMap[item.foodId] || null
-				}))
+				const foodMap = buildFoodMap(responses)
+				this.orders.orderDetails = attachFoodsToOrderDetails(detailList, foodMap)
 			} catch (error) {
 				console.error('Failed to load order foods:', error)
 			}
@@ -250,12 +244,7 @@ export default {
 		},
 
 		onPointsInput() {
-			if (this.pointsToUse < 0) {
-				this.pointsToUse = 0
-			}
-			if (this.pointsToUse > this.maxPointsCanUse) {
-				this.pointsToUse = this.maxPointsCanUse
-			}
+			this.pointsToUse = normalizePointsToUse(this.pointsToUse, this.maxPointsCanUse)
 		},
 
 		useMaxPoints() {

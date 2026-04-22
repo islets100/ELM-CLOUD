@@ -7,7 +7,7 @@ import java.time.LocalDate;
  */
 public class BirthdayIntegralRecord {
     private Integer id;
-    private Long userId;
+    private String userId;
     private LocalDate recordDate;
     private Boolean monthlyEarned;
     private Boolean birthdayEarned;
@@ -21,7 +21,7 @@ public class BirthdayIntegralRecord {
         this.birthdayPoints = 0;
     }
 
-    public BirthdayIntegralRecord(Long userId, LocalDate recordDate) {
+    public BirthdayIntegralRecord(String userId, LocalDate recordDate) {
         this.userId = userId;
         this.recordDate = recordDate;
         this.monthlyEarned = false;
@@ -39,11 +39,11 @@ public class BirthdayIntegralRecord {
         this.id = id;
     }
 
-    public Long getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
 

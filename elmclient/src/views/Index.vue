@@ -1,1010 +1,660 @@
 <template>
 	<div class="wrapper">
-		<!-- header部分 -->
-		<header>
-			<div class="icon-location-box">
-				<div class="icon-location"></div>
+		<header class="top-bar">
+			<div class="location-box">
+				<i class="fa fa-map-marker"></i>
+				<div class="location-text">
+					<label for="location-select">配送地址</label>
+					<select id="location-select" v-model="currentLocation" @change="onLocationChange">
+						<option v-for="loc in locations" :key="loc" :value="loc">{{ loc }}</option>
+					</select>
+				</div>
 			</div>
-			<!-- 替换location-text，变成可选择位置的下拉 -->
-			<div class="location-text">
-				<label>当前位置：</label>
-				<select v-model="currentLocation" @change="onLocationChange">
-					<option v-for="loc in locations" :key="loc" :value="loc">{{ loc }}</option>
-				</select>
-			</div>
+			<button class="login-btn" type="button" @click="goUserCenter">
+				{{ isLoggedIn ? '我的' : '登录' }}
+			</button>
 		</header>
 
-		<!-- search部分 -->
-		<!-- 搜索框部分（此块与search-fixed-top块宽度高度一致，用于当search-fixed-top块固定后，挡住下面块不要窜上去） -->
-		<div class="search">
-			<!-- 当滚动条超过上面的定位块时，search-fixed-top块变成固定在顶部。 -->
-			<div class="search-fixed-top" ref="fixedBox">
-				<!-- 搜索来源部分中间的白框 -->
-				<div class="search-box">
-					<i class="fa fa-search"></i>搜索饿了么商家、商品名称
-				</div>
+		<section class="search-section">
+			<div class="search-box" @click="focusCategory">
+				<i class="fa fa-search"></i>
+				<span>查看分类商家，开始点餐</span>
 			</div>
-		</div>
+		</section>
 
-		<!-- 点餐分类部分 -->
-		<ul class="foodtype">
-			<li @click="toBusinessList(1)">
-				<img src="../assets/dcfl01.png">
-				<p>美食</p>
-			</li>
-			<li @click="toBusinessList(2)">
-				<img src="../assets/dcfl02.png">
-				<p>早餐</p>
-			</li>
-			<li @click="toBusinessList(3)">
-				<img src="../assets/dcfl03.png">
-				<p>跑腿代购</p>
-			</li>
-			<li @click="toBusinessList(4)">
-				<img src="../assets/dcfl04.png">
-				<p>汉堡披萨</p>
-			</li>
-			<li @click="toBusinessList(5)">
-				<img src="../assets/dcfl05.png">
-				<p>甜品饮品</p>
-			</li>
-			<li @click="toBusinessList(6)">
-				<img src="../assets/dcfl06.png">
-				<p>速食简餐</p>
-			</li>
-			<li @click="toBusinessList(7)">
-				<img src="../assets/dcfl07.png">
-				<p>地方小吃</p>
-			</li>
-			<li @click="toBusinessList(8)">
-				<img src="../assets/dcfl08.png">
-				<p>米粉面馆</p>
-			</li>
-			<li @click="toBusinessList(9)">
-				<img src="../assets/dcfl09.png">
-				<p>包子粥铺</p>
-			</li>
-			<li @click="toBusinessList(10)">
-				<img src="../assets/dcfl10.png">
-				<p>炸鸡炸串</p>
+		<ul ref="categorySection" class="category-grid">
+			<li v-for="item in categories" :key="item.id" :title="item.tip" @click="toBusinessList(item.id)">
+				<img :src="item.icon" :alt="item.name">
+				<p>{{ item.name }}</p>
 			</li>
 		</ul>
 
-		<!-- 横幅广告部分 -->
-		<div class="banner">
-			<h3>品质套餐</h3>
-			<p>搭配齐全吃得好</p>
-			<a>立即抢购 &gt;</a>
-		</div>
-
-		<!-- 超级会员部分 -->
-		<div class="supermember">
-			<div class="left">
-				<img src="../assets/super_member.png">
-				<h3>超级会员</h3>
-				<p>&#8226; 每月享超值权益</p>
+		<section class="member-card">
+			<div class="member-left">
+				<img src="../assets/super_member.png" alt="会员中心">
+				<div>
+					<h3>签到领积分</h3>
+					<p>登录后可参与每日签到，钱包和积分页都能联动验证。</p>
+				</div>
 			</div>
-			<div class="right">
-				立即开通 &gt;
-			</div>
-		</div>
+			<button type="button" @click="openPointsPage">去查看</button>
+		</section>
 
-		<!-- 推荐商家部分 -->
-		<div class="recommend">
-			<div class="recommend-line"></div>
-			<p>推荐商家</p>
-			<div class="recommend-line"></div>
-		</div>
+		<section class="section-title">
+			<h2>推荐商家</h2>
+			<p>以下内容直接来自网关转发后的后端接口</p>
+		</section>
 
-		<!-- 推荐方式部分 -->
-		<ul class="recommendtype">
-			<li>综合排序<i class="fa fa-caret-down"></i></li>
-			<li>距离最近</li>
-			<li>销量最高</li>
-			<li>筛选<i class="fa fa-filter"></i></li>
-		</ul>
+		<section v-if="loading" class="state-card">
+			<i class="fa fa-spinner fa-spin"></i>
+			<p>正在加载商家...</p>
+		</section>
 
-		<!-- 推荐商家列表部分 -->
-		<ul class="business">
-			<li @click="toBusiness(10001)">
-				<img src="../assets/sj01.png">
+		<section v-else-if="errorMessage" class="state-card">
+			<i class="fa fa-exclamation-circle"></i>
+			<p>{{ errorMessage }}</p>
+			<button type="button" @click="loadRecommendedBusinesses">重新加载</button>
+		</section>
+
+		<ul v-else class="business-list">
+			<li v-for="(item, index) in recommendedBusinesses" :key="item.id || item.businessId" @click="toBusiness(item.id || item.businessId)">
+				<img :src="getBusinessImage(item, index)" :alt="item.businessName">
 				<div class="business-info">
-					<div class="business-info-h">
-						<h3>万家饺子（软件园E18店）</h3>
-						<div class="business-info-like">&#8226;</div>
+					<div class="business-header">
+						<h3>{{ item.businessName }}</h3>
+						<span>{{ getCategoryName(item.orderTypeId) }}</span>
 					</div>
-					<div class="business-info-star">
-						<div class="business-info-star-left">
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<p>4.9 月售345单</p>
-						</div>
-						<div class="business-info-star-right">
-							蜂鸟专送
-						</div>
-					</div>
-					<div class="business-info-delivery">
-						<p>&#165;15起送 | &#165;3配送</p>
-						<p>3.22km | 30分钟</p>
-					</div>
-					<div class="business-info-explain">
-						<div>各种饺子</div>
-					</div>
-					<div class="business-info-promotion">
-						<div class="business-info-promotion-left">
-							<div class="business-info-promotion-left-incon">新</div>
-							<p>饿了么新用户首单立减9元</p>
-						</div>
-						<div class="business-info-promotion-right">
-							<p>2个活动</p>
-							<i class="fa fa-caret-down"></i>
-						</div>
-					</div>
-					<div class="business-info-promotion">
-						<div class="business-info-promotion-left">
-							<div class="business-info-promotion-left-incon">特</div>
-							<p>特价商品5元起</p>
-						</div>
-					</div>
-				</div>
-			</li>
-			<li @click="toBusiness(10002)">
-				<img src="../assets/sj02.png">
-				<div class="business-info">
-					<div class="business-info-h">
-						<h3>小锅饭豆腐馆（全运店）</h3>
-						<div class="business-info-like">&#8226;</div>
-					</div>
-					<div class="business-info-star">
-						<div class="business-info-star-left">
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<p>4.9 月售345单</p>
-						</div>
-						<div class="business-info-star-right">
-							蜂鸟专送
-						</div>
-					</div>
-					<div class="business-info-delivery">
-						<p>&#165;15起送 | &#165;3配送</p>
-						<p>3.22km | 30分钟</p>
-					</div>
-					<div class="business-info-explain">
-						<div>各种饺子</div>
-					</div>
-					<div class="business-info-promotion">
-						<div class="business-info-promotion-left">
-							<div class="business-info-promotion-left-incon">新</div>
-							<p>饿了么新用户首单立减9元</p>
-						</div>
-						<div class="business-info-promotion-right">
-							<p>2个活动</p>
-							<i class="fa fa-caret-down"></i>
-						</div>
-					</div>
-					<div class="business-info-promotion">
-						<div class="business-info-promotion-left">
-							<div class="business-info-promotion-left-incon">特</div>
-							<p>特价商品5元起</p>
-						</div>
-					</div>
-				</div>
-			</li>
-			<li @click="toBusiness(10003)">
-				<img src="../assets/sj03.png">
-				<div class="business-info">
-					<div class="business-info-h">
-						<h3>麦当劳麦乐送（全运路店）</h3>
-						<div class="business-info-like">&#8226;</div>
-					</div>
-					<div class="business-info-star">
-						<div class="business-info-star-left">
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<p>4.9 月售345单</p>
-						</div>
-						<div class="business-info-star-right">
-							蜂鸟专送
-						</div>
-					</div>
-					<div class="business-info-delivery">
-						<p>&#165;15起送 | &#165;3配送</p>
-						<p>3.22km | 30分钟</p>
-					</div>
-					<div class="business-info-explain">
-						<div>各种饺子</div>
-					</div>
-					<div class="business-info-promotion">
-						<div class="business-info-promotion-left">
-							<div class="business-info-promotion-left-incon">新</div>
-							<p>饿了么新用户首单立减9元</p>
-						</div>
-						<div class="business-info-promotion-right">
-							<p>2个活动</p>
-							<i class="fa fa-caret-down"></i>
-						</div>
-					</div>
-					<div class="business-info-promotion">
-						<div class="business-info-promotion-left">
-							<div class="business-info-promotion-left-incon">特</div>
-							<p>特价商品5元起</p>
-						</div>
-					</div>
-				</div>
-			</li>
-			<li @click="toBusiness(10004)">
-				<img src="../assets/sj04.png">
-				<div class="business-info">
-					<div class="business-info-h">
-						<h3>米村拌饭（浑南店）</h3>
-						<div class="business-info-like">&#8226;</div>
-					</div>
-					<div class="business-info-star">
-						<div class="business-info-star-left">
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<p>4.9 月售345单</p>
-						</div>
-						<div class="business-info-star-right">
-							蜂鸟专送
-						</div>
-					</div>
-					<div class="business-info-delivery">
-						<p>&#165;15起送 | &#165;3配送</p>
-						<p>3.22km | 30分钟</p>
-					</div>
-					<div class="business-info-explain">
-						<div>各种饺子</div>
-					</div>
-					<div class="business-info-promotion">
-						<div class="business-info-promotion-left">
-							<div class="business-info-promotion-left-incon">新</div>
-							<p>饿了么新用户首单立减9元</p>
-						</div>
-						<div class="business-info-promotion-right">
-							<p>2个活动</p>
-							<i class="fa fa-caret-down"></i>
-						</div>
-					</div>
-					<div class="business-info-promotion">
-						<div class="business-info-promotion-left">
-							<div class="business-info-promotion-left-incon">特</div>
-							<p>特价商品5元起</p>
-						</div>
-					</div>
-				</div>
-			</li>
-			<li @click="toBusiness(10005)">
-				<img src="../assets/sj05.png">
-				<div class="business-info">
-					<div class="business-info-h">
-						<h3>申记串道（中海康城店）</h3>
-						<div class="business-info-like">&#8226;</div>
-					</div>
-					<div class="business-info-star">
-						<div class="business-info-star-left">
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<p>4.9 月售345单</p>
-						</div>
-						<div class="business-info-star-right">
-							蜂鸟专送
-						</div>
-					</div>
-					<div class="business-info-delivery">
-						<p>&#165;15起送 | &#165;3配送</p>
-						<p>3.22km | 30分钟</p>
-					</div>
-					<div class="business-info-explain">
-						<div>各种饺子</div>
-					</div>
-					<div class="business-info-promotion">
-						<div class="business-info-promotion-left">
-							<div class="business-info-promotion-left-incon">新</div>
-							<p>饿了么新用户首单立减9元</p>
-						</div>
-						<div class="business-info-promotion-right">
-							<p>2个活动</p>
-							<i class="fa fa-caret-down"></i>
-						</div>
-					</div>
-					<div class="business-info-promotion">
-						<div class="business-info-promotion-left">
-							<div class="business-info-promotion-left-incon">特</div>
-							<p>特价商品5元起</p>
-						</div>
-					</div>
-				</div>
-			</li>
-			<li @click="toBusiness(10006)">
-				<img src="../assets/sj06.png">
-				<div class="business-info">
-					<div class="business-info-h">
-						<h3>半亩良田排骨米饭</h3>
-						<div class="business-info-like">&#8226;</div>
-					</div>
-					<div class="business-info-star">
-						<div class="business-info-star-left">
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<i class="fa fa-star"></i>
-							<p>4.9 月售345单</p>
-						</div>
-						<div class="business-info-star-right">
-							蜂鸟专送
-						</div>
-					</div>
-					<div class="business-info-delivery">
-						<p>&#165;15起送 | &#165;3配送</p>
-						<p>3.22km | 30分钟</p>
-					</div>
-					<div class="business-info-explain">
-						<div>各种饺子</div>
-					</div>
-					<div class="business-info-promotion">
-						<div class="business-info-promotion-left">
-							<div class="business-info-promotion-left-icon">新</div>
-							<p>饿了么新用户首单立减9元</p>
-						</div>
-						<div class="business-info-promotion-right">
-							<p>2个活动</p>
-							<i class="fa fa-caret-down"></i>
-						</div>
-					</div>
-					<div class="business-info-promotion">
-						<div class="business-info-promotion-left">
-							<div class="business-info-promotion-left-icon" style="background-color: #f1884f;">特</div>
-							<p>特价商品5元起</p>
-						</div>
-					</div>
+					<p class="business-price">
+						起送 ¥{{ formatPrice(item.startPrice) }}
+						<span>配送 ¥{{ formatPrice(item.deliveryPrice) }}</span>
+					</p>
+					<p class="business-desc">{{ item.businessExplain || '暂无商家介绍' }}</p>
+					<p class="business-remark">{{ item.remarks || '支持在线下单' }}</p>
 				</div>
 			</li>
 		</ul>
 
-		<!-- 签到弹窗 -->
 		<div class="sign-in-modal" v-if="showSignInModal" @click.self="closeSignInModal">
 			<div class="sign-in-content">
 				<div class="sign-in-header">
-					<span class="close-btn" @click="closeSignInModal">×</span>
-					<h3>每日签到</h3>
+					<h3>今日签到</h3>
+					<button class="close-btn" type="button" @click="closeSignInModal">×</button>
 				</div>
 				<div class="sign-in-body">
-					<div class="sign-in-icon">📅</div>
-					<p class="sign-in-text">签到即可获得10积分</p>
-					<p class="sign-in-tip">积分有效期1年</p>
-					<button class="sign-in-btn" @click="handleSignIn" :disabled="signingIn">
+					<div class="sign-in-icon">积分 +10</div>
+					<p class="sign-in-text">检测到你今天还没签到</p>
+					<p class="sign-in-tip">现在签到会给当前账号补充 10 积分</p>
+					<button class="sign-in-btn" type="button" @click="handleSignIn" :disabled="signingIn">
 						{{ signingIn ? '签到中...' : '立即签到' }}
 					</button>
 				</div>
 			</div>
 		</div>
 
-		<!-- 底部菜单部分 -->
-		<Footer></Footer>
+		<Footer />
 	</div>
 </template>
 
 <script>
-	//导入共通组件
-	import Footer from '../components/Footer.vue';
-	import auth from '../utils/auth';
-	import pointsApi from '../api/points.js';
+import Footer from '../components/Footer.vue'
+import auth from '../utils/auth'
+import pointsApi from '../api/points.js'
 
-	export default {
-		name: 'Index',
-		data() {
-			return {
-				currentLocation: '沈阳市规划大厦',
-				locations: [
-					'沈阳市规划大厦',
-					'天津大学北洋园校区',
-					'南开大学津南校区',
-					'其他'
-				],
-				showSignInModal: false,
-				signingIn: false
-			};
-		},
-		mounted() {
-			// 1. 检查签到状态
-			this.checkSignInStatus();
+const categories = [
+	{ id: 1, name: '美食', tip: '牛肉饭、小炒', icon: require('../assets/dcfl01.png') },
+	{ id: 2, name: '早餐', tip: '豆浆包子', icon: require('../assets/dcfl02.png') },
+	{ id: 3, name: '跑腿代购', tip: '取件代买', icon: require('../assets/dcfl03.png') },
+	{ id: 4, name: '汉堡披萨', tip: '炸鸡汉堡', icon: require('../assets/dcfl04.png') },
+	{ id: 5, name: '甜品饮品', tip: '奶茶甜品', icon: require('../assets/dcfl05.png') },
+	{ id: 6, name: '简餐便当', tip: '快手便当', icon: require('../assets/dcfl06.png') },
+	{ id: 7, name: '地方小吃', tip: '特色风味', icon: require('../assets/dcfl07.png') },
+	{ id: 8, name: '面食', tip: '热汤热面', icon: require('../assets/dcfl08.png') },
+	{ id: 9, name: '粥铺', tip: '清淡暖胃', icon: require('../assets/dcfl09.png') },
+	{ id: 10, name: '炸鸡烤串', tip: '夜宵解馋', icon: require('../assets/dcfl10.png') }
+]
 
-			// 2. 初始化滚动条监听
-			document.onscroll = () => {
-				// 获取滚动条位置
-				let s1 = document.documentElement.scrollTop;
-				let s2 = document.body.scrollTop;
-				let scroll = s1 == 0 ? s2 : s1;
-				// 获取视口宽度
-				let width = document.documentElement.clientWidth;
+const shopImages = [
+	require('../assets/sj01.png'),
+	require('../assets/sj02.png'),
+	require('../assets/sj03.png'),
+	require('../assets/sj04.png'),
+	require('../assets/sj05.png'),
+	require('../assets/sj06.png'),
+	require('../assets/sj07.png'),
+	require('../assets/sj08.png'),
+	require('../assets/sj09.png')
+]
 
-				// 获取顶部固定块
-				let search = this.$refs.fixedBox;
-				if (!search) return; // 加一行判空的，避免 null*
-
-				// 判断滚动条超过视口宽度的12%时，搜索块变固定定位
-				if (scroll > width * 0.12) {
-					search.style.position = 'fixed';
-					search.style.left = '0';
-					search.style.top = '0';
-				} else {
-					search.style.position = 'static';
-				}
-			}
-		},
-		beforeUnmount() {
-			//当切换到其他组件时，就不需要document滚动条事件，所以将此事件去掉
-			document.onscroll = null;
-		},
-		components: {
-			Footer
-		},
-		methods: {
-			toBusinessList(orderTypeId) {
-				const user = auth.getUserInfo(); // 统一获取用户信息
-				console.log('点击美食，user =', user);
-				if (!user) {
-					// 未登录跳登录页
-					this.$router.push('/login');
-				} else {
-					// 已登录跳商家列表
-					this.$router.push({
-						path: '/businessList',
-						query: {
-							orderTypeId
-						}
-					});
-				}
-			},
-
-			toBusiness(businessId) {
-				const user = auth.getUserInfo();
-				if (!user) {
-					this.$router.push('/login');
-				} else {
-					this.$router.push({
-						path: '/businessInfo',
-						query: {
-							businessId
-						}
-					});
-				}
-			},
-
-			onLocationChange() {
-				console.log('当前定位已切换为：', this.currentLocation);
-			},
-			async checkSignInStatus() {
-				try {
-					const user = auth.getUserInfo();
-					if (!user) {
-						console.log('[sign-in] 未检测到用户信息，跳过签到检查');
-						return; // 未登录不显示签到弹窗
-					}
-					console.log('[sign-in] 检测到用户，开始请求签到状态', user?.id);
-					
-					const response = await pointsApi.checkSignInToday();
-					console.log('[sign-in] 接口响应', response?.data);
-					if (response.data.success) {
-						const isSignedIn = response.data.data;
-						// 如果今天未签到，显示签到弹窗
-						if (!isSignedIn) {
-							// 延迟1秒显示，让页面先加载完成
-							setTimeout(() => {
-								this.showSignInModal = true;
-							}, 1000);
-						}
-					}
-				} catch (err) {
-					console.error('检查签到状态失败', err);
-				}
-			},
-			async handleSignIn() {
-				if (this.signingIn) return;
-				
-				this.signingIn = true;
-				try {
-					const response = await pointsApi.signIn();
-					if (response.data.success) {
-						alert('签到成功！获得10积分，有效期1年');
-						this.closeSignInModal();
-					} else {
-						alert(response.data.message || '签到失败');
-					}
-				} catch (err) {
-					console.error('签到失败', err);
-					alert(err.response?.data?.message || '签到失败，请稍后重试');
-				} finally {
-					this.signingIn = false;
-				}
-			},
-			closeSignInModal() {
-				this.showSignInModal = false;
-			}
+export default {
+	name: 'Index',
+	components: {
+		Footer
+	},
+	data() {
+		return {
+			categories,
+			currentLocation: '大学城软件实践实验室',
+			locations: [
+				'大学城软件实践实验室',
+				'大学城生活区东门',
+				'大学城图书馆西侧',
+				'大学城商业街夜市口'
+			],
+			recommendedBusinesses: [],
+			loading: false,
+			errorMessage: '',
+			showSignInModal: false,
+			signingIn: false
 		}
+	},
+	computed: {
+		isLoggedIn() {
+			return auth.isLoggedIn()
+		}
+	},
+	async mounted() {
+		await Promise.all([this.loadRecommendedBusinesses(), this.checkSignInStatus()])
+	},
+	methods: {
+		formatPrice(value) {
+			return Number(value || 0).toFixed(2)
+		},
 
+		getCategoryName(orderTypeId) {
+			return this.categories.find(item => item.id === Number(orderTypeId))?.name || '其他分类'
+		},
 
+		getBusinessImage(item, index) {
+			if (item.businessImg) {
+				return item.businessImg
+			}
 
+			const seed = Number(item.orderTypeId || index + 1) - 1
+			return shopImages[((seed + index) % shopImages.length + shopImages.length) % shopImages.length]
+		},
+
+		focusCategory() {
+			this.$refs.categorySection?.scrollIntoView({
+				behavior: 'smooth',
+				block: 'start'
+			})
+		},
+
+		onLocationChange() {
+			console.log('Location changed:', this.currentLocation)
+		},
+
+		goUserCenter() {
+			if (this.isLoggedIn) {
+				this.$router.push('/user')
+				return
+			}
+
+			this.$router.push('/login')
+		},
+
+		openPointsPage() {
+			if (!this.isLoggedIn) {
+				this.$router.push('/login')
+				return
+			}
+
+			this.$router.push('/points')
+		},
+
+		toBusinessList(orderTypeId) {
+			this.$router.push({
+				path: '/businessList',
+				query: {
+					orderTypeId
+				}
+			})
+		},
+
+		toBusiness(businessId) {
+			this.$router.push({
+				path: '/businessInfo',
+				query: {
+					businessId
+				}
+			})
+		},
+
+		async loadRecommendedBusinesses() {
+			this.loading = true
+			this.errorMessage = ''
+
+			try {
+				const responses = await Promise.all(
+					this.categories.map(category => this.$axios.get(`/api/businesses/order-type/${category.id}`))
+				)
+
+				const businesses = responses.flatMap(response => (response.data.success ? response.data.data || [] : []))
+				this.recommendedBusinesses = businesses
+					.filter(item => item && (item.id || item.businessId))
+					.sort((a, b) => Number(a.orderTypeId || 0) - Number(b.orderTypeId || 0))
+			} catch (error) {
+				console.error('Failed to load recommended businesses:', error)
+				this.errorMessage = '首页商家加载失败，请确认网关和业务服务都已启动'
+			} finally {
+				this.loading = false
+			}
+		},
+
+		async checkSignInStatus() {
+			if (!auth.isLoggedIn()) {
+				return
+			}
+
+			try {
+				const response = await pointsApi.checkSignInToday()
+				if (response.data.success && response.data.data === false) {
+					setTimeout(() => {
+						this.showSignInModal = true
+					}, 500)
+				}
+			} catch (error) {
+				console.error('Failed to check sign-in status:', error)
+			}
+		},
+
+		async handleSignIn() {
+			if (this.signingIn) {
+				return
+			}
+
+			this.signingIn = true
+			try {
+				const response = await pointsApi.signIn()
+				if (response.data.success) {
+					alert('签到成功，已发放 10 积分')
+					this.closeSignInModal()
+					return
+				}
+
+				alert(response.data.message || '签到失败')
+			} catch (error) {
+				console.error('Failed to sign in:', error)
+				alert(error.response?.data?.message || '签到失败，请稍后重试')
+			} finally {
+				this.signingIn = false
+			}
+		},
+
+		closeSignInModal() {
+			this.showSignInModal = false
+		}
 	}
+}
 </script>
 
 <style scoped>
-	/****************** 总容器 ******************/
-	.wrapper {
-		width: 100%;
-		height: 100%;
-	}
+.wrapper {
+	width: 100%;
+	min-height: 100vh;
+	padding-bottom: 16vw;
+	background:
+		radial-gradient(circle at top right, rgba(0, 151, 255, 0.14), transparent 32vw),
+		linear-gradient(180deg, #eaf6ff 0, #f6f7fb 22vw, #f5f5f5 100%);
+}
 
-	/****************** header 部分 ******************/
-	.wrapper header {
-		width: 100%;
-		height: 12vw;
-		background-color: #0097FF;
-		display: flex;
-		align-items: center;
-	}
+.top-bar {
+	width: 100%;
+	padding: 3vw;
+	box-sizing: border-box;
+	background-color: #0097ff;
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
 
-	.wrapper header .icon-location-box {
-		width: 3.5vw;
-		height: 3.5vw;
-		margin: 0 1vw 0 3vw;
-	}
+.location-box {
+	display: flex;
+	align-items: center;
+	gap: 2vw;
+}
 
-	.wrapper header .location-text {
-		font-size: 4.5vw;
-		font-weight: 700;
-		color: #fff;
-	}
+.location-box i {
+	font-size: 5vw;
+}
 
-	.wrapper header .location-text .fa-caret-down {
-		margin-left: 1vw;
-	}
+.location-text {
+	display: flex;
+	flex-direction: column;
+}
 
-	/****************** search 部分 ******************/
-	.wrapper .search {
-		width: 100%;
-		height: 13vw;
-	}
+.location-text label {
+	font-size: 2.8vw;
+	opacity: 0.86;
+	margin-bottom: 0.6vw;
+}
 
-	.wrapper .search .search-fixed-top {
-		width: 100%;
-		height: 13vw;
-		background-color: #0097FF;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		z-index: 10;
-		/* 增加 z-index */
-	}
+.location-text select {
+	border: none;
+	background: transparent;
+	color: #fff;
+	font-size: 4.2vw;
+	font-weight: 700;
+	padding: 0;
+}
 
-	.wrapper .search .search-fixed-top .search-box {
-		width: 90%;
-		height: 9vw;
-		background-color: #fff;
-		border-radius: 2px;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		font-size: 3.5vw;
-		color: #AEAEAE;
-		font-family: "宋体";
-		/* 此样式是让文本选中状态无效 */
-		user-select: none;
-	}
+.location-text select:focus {
+	outline: none;
+}
 
-	.wrapper .search .search-fixed-top .search-box .fa-search {
-		margin-right: 1vw;
-	}
+.location-text option {
+	color: #213547;
+}
 
-	/****************** 点餐分类部分 ******************/
-	.wrapper .foodtype {
-		width: 100%;
-		height: 48vw;
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-around;
-		/* 要使用 align-content。10 个子元素将自动换行为两行，而且两行作为一个整体垂直居中 */
-		align-content: center;
-	}
+.login-btn {
+	border: 1px solid rgba(255, 255, 255, 0.32);
+	background: rgba(255, 255, 255, 0.12);
+	color: #fff;
+	border-radius: 999px;
+	padding: 1.6vw 4vw;
+	font-size: 3.2vw;
+}
 
-	.wrapper .foodtype li {
-		/* 一共 10 个子元素，通过计算，子元素宽度在 16.7 ~ 20 之间，才能保证换两行 */
-		width: 18vw;
-		height: 20vw;
-		display: flex;
-		/* 弹性盒子主轴方向设为 column，然后仍然是垂直水平方向居中 */
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		user-select: none;
-		cursor: pointer;
-	}
+.search-section {
+	padding: 3vw 4vw 1vw;
+}
 
-	.wrapper .foodtype li img {
-		width: 12vw;
-		/* 视频讲解时高度设置为 12vw，实际上设置为 10.3vw 更佳 */
-		height: 10.3vw;
-	}
+.search-box {
+	height: 11vw;
+	border-radius: 999px;
+	background-color: #fff;
+	box-shadow: 0 1.5vw 4vw rgba(15, 58, 109, 0.08);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 2vw;
+	color: #7b8a97;
+	font-size: 3.4vw;
+}
 
-	.wrapper .foodtype li p {
-		font-size: 3.2vw;
-		color: #666;
-	}
+.search-box i {
+	color: #0097ff;
+}
 
-	/****************** 横幅广告部分 ******************/
-	.wrapper .banner {
-		width: 95%;
-		margin: 0 auto;
-		height: 29vw;
-		/* 此三个样式组合，可以保证背景图片充满整个容器 */
-		background-image: url(../assets/index_banner.png);
-		background-repeat: no-repeat;
-		background-size: cover;
-		box-sizing: border-box;
-		padding: 2vw 6vw;
-	}
+.category-grid {
+	margin: 0;
+	padding: 2vw 1.5vw 0;
+	list-style: none;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-around;
+	align-content: center;
+}
 
-	.wrapper .banner h3 {
-		font-size: 4.2vw;
-		margin-bottom: 1.2vw;
-	}
+.category-grid li {
+	width: 18vw;
+	height: 20vw;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	cursor: pointer;
+}
 
-	.wrapper .banner p {
-		font-size: 3.4vw;
-		color: #666;
-		margin-bottom: 2.4vw;
-	}
+.category-grid li img {
+	width: 12vw;
+	height: 10.3vw;
+	object-fit: contain;
+}
 
-	.wrapper .banner a {
-		font-size: 3vw;
-		color: #C79060;
-	}
+.category-grid li p {
+	margin: 1.6vw 0 0;
+	font-size: 3.2vw;
+	color: #49586a;
+	line-height: 1.2;
+	text-align: center;
+}
 
-	/****************** 超级会员部分 ******************/
-	.wrapper .supermember {
-		width: 95%;
-		margin: 0 auto;
-		height: 11.5vw;
-		background-color: #FEEDC1;
-		margin-top: 1.3vw;
-		border-radius: 2px;
-		color: #644F1B;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
+.member-card {
+	margin: 0 4vw 4vw;
+	padding: 3.5vw 4vw;
+	border-radius: 4vw;
+	background: linear-gradient(135deg, #fff1d1, #ffe4a4);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 3vw;
+}
 
-	.wrapper .supermember .left {
-		display: flex;
-		align-items: center;
-		margin-left: 4vw;
-		user-select: none;
-	}
+.member-left {
+	display: flex;
+	align-items: center;
+	gap: 3vw;
+}
 
-	.wrapper .supermember .left img {
-		width: 6vw;
-		height: 6vw;
-		margin-right: 2vw;
-	}
+.member-left img {
+	width: 10vw;
+	height: 10vw;
+}
 
-	.wrapper .supermember .left h3 {
-		font-size: 4vw;
-		margin-right: 2vw;
-	}
+.member-left h3 {
+	margin: 0 0 1vw;
+	font-size: 4vw;
+	color: #6f4e00;
+}
 
-	.wrapper .supermember .left p {
-		font-size: 3vw;
-	}
+.member-left p {
+	margin: 0;
+	font-size: 3vw;
+	line-height: 1.5;
+	color: #8c6711;
+}
 
-	.wrapper .supermember .right {
-		font-size: 3vw;
-		margin-right: 4vw;
-		cursor: pointer;
-	}
+.member-card button {
+	border: none;
+	background-color: rgba(111, 78, 0, 0.12);
+	color: #6f4e00;
+	border-radius: 999px;
+	padding: 1.8vw 3vw;
+	font-size: 3vw;
+}
 
-	/****************** 推荐商家部分 ******************/
-	.wrapper .recommend {
-		width: 100%;
-		height: 14vw;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
+.section-title {
+	padding: 0 4vw;
+	margin-bottom: 2vw;
+}
 
-	.wrapper .recommend .recommend-line {
-		width: 6vw;
-		height: 0.2vw;
-		background-color: #888;
-	}
+.section-title h2 {
+	margin: 0 0 1vw;
+	font-size: 5vw;
+	color: #213547;
+}
 
-	.wrapper .recommend p {
-		font-size: 4vw;
-		margin: 0 4vw;
-	}
+.section-title p {
+	margin: 0;
+	font-size: 3vw;
+	color: #6b7a89;
+}
 
-	/****************** 推荐方式部分 ******************/
-	.wrapper .recommendtype {
-		width: 100%;
-		height: 5vw;
-		margin-bottom: 5vw;
-		display: flex;
-		justify-content: space-around;
-		align-items: center;
-	}
+.business-list {
+	margin: 0;
+	padding: 0 4vw;
+	list-style: none;
+}
 
-	.wrapper .recommendtype li {
-		font-size: 3.5vw;
-		color: #555;
-	}
+.business-list li {
+	margin-bottom: 3vw;
+	padding: 3.5vw;
+	border-radius: 4vw;
+	background-color: #fff;
+	box-shadow: 0 1.5vw 4vw rgba(15, 58, 109, 0.06);
+	display: flex;
+	align-items: center;
+	gap: 3vw;
+	cursor: pointer;
+}
 
-	/****************** 推荐商家列表部分 ******************/
-	.wrapper .business {
-		width: 100%;
-		margin-bottom: 14vw;
-	}
+.business-list li img {
+	width: 20vw;
+	height: 20vw;
+	border-radius: 3vw;
+	object-fit: cover;
+	background-color: #eef4f9;
+}
 
-	.wrapper .business li {
-		width: 100%;
-		box-sizing: border-box;
-		padding: 2.5vw;
-		user-select: none;
-		border-bottom: solid 1px #DDD;
-		display: flex;
-	}
+.business-info {
+	flex: 1;
+	min-width: 0;
+}
 
-	.wrapper .business li img {
-		width: 18vw;
-		height: 18vw;
-	}
+.business-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 2vw;
+}
 
-	.wrapper .business li .business-info {
-		width: 100%;
-		box-sizing: border-box;
-		padding-left: 3vw;
-	}
+.business-header h3 {
+	margin: 0;
+	font-size: 4vw;
+	color: #213547;
+}
 
-	.wrapper .business li .business-info .business-info-h {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 2vw;
-	}
+.business-header span {
+	flex-shrink: 0;
+	padding: 0.8vw 1.8vw;
+	border-radius: 999px;
+	background-color: #eef7ff;
+	color: #0097ff;
+	font-size: 2.6vw;
+}
 
-	.wrapper .business li .business-info .business-info-h h3 {
-		font-size: 4vw;
-		color: #333;
-	}
+.business-price {
+	margin: 1.4vw 0 1vw;
+	font-size: 3vw;
+	color: #ff7a45;
+}
 
-	.wrapper .business li .business-info .business-info-h .business-info-like {
-		width: 1.6vw;
-		height: 3.4vw;
-		background-color: #666;
-		color: #fff;
-		font-size: 4vw;
-		margin-right: 4vw;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
+.business-price span {
+	margin-left: 2vw;
+	color: #607080;
+}
 
-	.wrapper .business li .business-info .business-info-star {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 2vw;
-		font-size: 3.1vw;
-	}
+.business-desc,
+.business-remark {
+	margin: 0;
+	font-size: 3vw;
+	line-height: 1.5;
+	color: #6b7a89;
+}
 
+.business-remark {
+	margin-top: 1vw;
+	color: #0097ff;
+}
 
-	.wrapper .business li .business-info .business-info-star .business-info-star-left {
-		display: flex;
-		align-items: center;
-	}
+.state-card {
+	margin: 4vw;
+	padding: 12vw 6vw;
+	border-radius: 4vw;
+	background-color: #fff;
+	box-shadow: 0 1.5vw 4vw rgba(15, 58, 109, 0.06);
+	text-align: center;
+	color: #7b8a97;
+}
 
-	.wrapper .business li .business-info .business-info-star .business-info-star-left .fa-star {
-		color: #FEC80E;
-		margin-right: 0.5vw;
-	}
+.state-card i {
+	font-size: 12vw;
+	color: #c8d3dd;
+}
 
-	.wrapper .business li .business-info .business-info-star .business-info-star-left p {
-		color: #666;
-		margin-left: 1vw;
-	}
+.state-card p {
+	margin: 3vw 0;
+	font-size: 3.6vw;
+}
 
-	.wrapper .business li .business-info .business-info-star .business-info-star-right {
-		background-color: #0097FF;
-		color: #fff;
-		font-size: 2.4vw;
-		border-radius: 2px;
-		padding: 0 0.6vw;
-	}
+.state-card button {
+	border: none;
+	background-color: #0097ff;
+	color: #fff;
+	border-radius: 999px;
+	padding: 2vw 5vw;
+	font-size: 3.2vw;
+}
 
-	.wrapper .business li .business-info .business-info-delivery {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 2vw;
-		color: #666;
-		font-size: 3.1vw;
-	}
+.sign-in-modal {
+	position: fixed;
+	inset: 0;
+	background-color: rgba(15, 23, 42, 0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 2000;
+}
 
-	.wrapper .business li .business-info .business-info-explain {
-		display: flex;
-		align-items: center;
-		margin-bottom: 3vw;
-	}
+.sign-in-content {
+	width: 80%;
+	max-width: 420px;
+	border-radius: 4vw;
+	background-color: #fff;
+	overflow: hidden;
+	box-shadow: 0 2vw 6vw rgba(15, 58, 109, 0.18);
+}
 
-	.wrapper .business li .business-info .business-info-explain div {
-		border: solid 1px #DDD;
-		font-size: 2.8vw;
-		color: #666;
-		border-radius: 3px;
-		padding: 0 0.1vw;
-	}
+.sign-in-header {
+	padding: 4vw;
+	background-color: #0097ff;
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
 
-	.wrapper .business li .business-info .business-info-promotion {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1.8vw;
-	}
+.sign-in-header h3 {
+	margin: 0;
+	font-size: 4.5vw;
+}
 
-	.wrapper .business li .business-info .business-info-promotion .business-info-promotion-left {
-		display: flex;
-		align-items: center;
-	}
+.close-btn {
+	border: none;
+	background: transparent;
+	color: #fff;
+	font-size: 7vw;
+	line-height: 1;
+}
 
-	.wrapper .business li .business-info .business-info-promotion .business-info-promotion-left .business-info-promotion-left-icon {
-		width: 4vw;
-		height: 4vw;
-		background-color: #70BC46;
-		border-radius: 3px;
-		font-size: 3vw;
-		color: #fff;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
+.sign-in-body {
+	padding: 6vw;
+	text-align: center;
+}
 
-	.wrapper .business li .business-info .business-info-promotion .business-info-promotion-left p {
-		color: #666;
-		font-size: 3vw;
-		margin-left: 2vw;
-	}
+.sign-in-icon {
+	margin-bottom: 3vw;
+	font-size: 6vw;
+	font-weight: 700;
+	color: #0097ff;
+}
 
-	.wrapper .business li .business-info .business-info-promotion .business-info-promotion-right {
-		display: flex;
-		align-items: center;
-		font-size: 2.5vw;
-		color: #999;
-	}
+.sign-in-text {
+	margin: 0 0 2vw;
+	font-size: 4.5vw;
+	color: #213547;
+}
 
-	.wrapper .business li .business-info .business-info-promotion .business-info-promotion-right p {
-		margin-right: 2vw;
-	}
+.sign-in-tip {
+	margin: 0 0 5vw;
+	font-size: 3.2vw;
+	color: #6b7a89;
+}
 
-	.location-bar {
-		padding: 10px;
-		background-color: #f8f8f8;
-		display: flex;
-		align-items: center;
-		font-size: 10px;
-		font-weight: bold;
-	}
+.sign-in-btn {
+	width: 100%;
+	height: 11vw;
+	border: none;
+	border-radius: 999px;
+	background-color: #0097ff;
+	color: #fff;
+	font-size: 4vw;
+	font-weight: 700;
+}
 
-	select {
-		margin-left: 10px;
-		padding: 5px;
-		font-size: 10px;
-		border: 3px solid white;
-		border-radius: 4px;
-		background-color: #f8f8f8;
-		color: #333;
-		outline: none;
-		font-weight: bold;
-	}
-
-	/* 签到弹窗样式 */
-	.sign-in-modal {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background-color: rgba(0, 0, 0, 0.5);
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		z-index: 2000;
-	}
-
-	.sign-in-content {
-		background: #fff;
-		border-radius: 3vw;
-		width: 80%;
-		max-width: 400px;
-		overflow: hidden;
-	}
-
-	.sign-in-header {
-		background: #0097FF;
-		color: #fff;
-		padding: 4vw;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		position: relative;
-	}
-
-	.sign-in-header h3 {
-		font-size: 4.5vw;
-		margin: 0;
-		flex: 1;
-		text-align: center;
-	}
-
-	.close-btn {
-		position: absolute;
-		right: 4vw;
-		font-size: 6vw;
-		cursor: pointer;
-		line-height: 1;
-	}
-
-	.sign-in-body {
-		padding: 6vw;
-		text-align: center;
-	}
-
-	.sign-in-icon {
-		font-size: 12vw;
-		margin-bottom: 3vw;
-	}
-
-	.sign-in-text {
-		font-size: 4.5vw;
-		color: #333;
-		font-weight: bold;
-		margin-bottom: 2vw;
-	}
-
-	.sign-in-tip {
-		font-size: 3.2vw;
-		color: #999;
-		margin-bottom: 5vw;
-	}
-
-	.sign-in-btn {
-		width: 100%;
-		padding: 3vw 0;
-		background: #0097FF;
-		color: #fff;
-		border: none;
-		border-radius: 2vw;
-		font-size: 4vw;
-		font-weight: bold;
-		cursor: pointer;
-	}
-
-	.sign-in-btn:disabled {
-		background: #ccc;
-		cursor: not-allowed;
-	}
+.sign-in-btn:disabled {
+	background-color: #a9c7df;
+}
 </style>

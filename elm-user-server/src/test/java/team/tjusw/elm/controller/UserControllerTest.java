@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -114,6 +115,20 @@ class UserControllerTest {
 		mockMvc.perform(post("/api/auth").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"username\":\"u1001\",\"password\":\"wrong\"}"))
 				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void authShouldReturnTokenWhenPasswordCorrect() throws Exception {
+		User user = new User();
+		user.setUserId("u1001");
+		when(userService.getUserByIdByPass(any(User.class))).thenReturn(user);
+		when(jwtTokenProvider.createToken("u1001", true)).thenReturn("jwt-ok");
+
+		mockMvc.perform(post("/api/auth").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"username\":\"u1001\",\"password\":\"123456\",\"rememberMe\":true}"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Authorization", "Bearer jwt-ok"))
+				.andExpect(jsonPath("$.id_token").value("jwt-ok"));
 	}
 
 	@Test

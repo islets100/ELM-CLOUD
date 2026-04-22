@@ -1,11 +1,12 @@
 import axios from 'axios'
-import auth from '../utils/auth'
+import auth from '../utils/auth.js'
 import walletApi from './wallet.js'
+import { normalizeAxiosResult, resolveUserId } from '../utils/apiResult.js'
 
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || ''
 
 function getCurrentUserId() {
-	return auth.getUserInfo()?.id
+	return resolveUserId(auth.getUserInfo())
 }
 
 function getAuthHeaders() {
@@ -17,13 +18,13 @@ function getAuthHeaders() {
 export default {
 	// 购买VIP卡
 	purchaseVipCard(cardType) {
-		return axios.post(`${API_BASE_URL}/api/vip/purchase`, null, {
+		return normalizeAxiosResult(axios.post(`${API_BASE_URL}/api/vip/purchase`, null, {
 			params: {
 				userId: getCurrentUserId(),
 				cardType
 			},
 			headers: getAuthHeaders()
-		})
+		}))
 	},
 
 	// 获取当前有效VIP卡

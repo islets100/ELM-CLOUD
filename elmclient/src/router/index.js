@@ -25,6 +25,7 @@ import AddUser from '../views/admin/AddUser.vue'
 import RewardRuleManagement from '../views/admin/RewardRuleManagement.vue'
 
 import auth from '../utils/auth'
+import { resolveRouteRedirect } from './routeAccess'
 
 const routes = [
 	{
@@ -318,49 +319,12 @@ router.push = function push(location) {
 }
 
 router.beforeEach((to, from, next) => {
-	const user = auth.getUserInfo()
-
-	if (to.meta.isPublic) {
-		if (auth.isAdmin() && to.path === '/admin/login') {
-			return next('/admin/users')
-		}
-		return next()
+	const redirect = resolveRouteRedirect(to, auth)
+	if (redirect) {
+		return next(redirect)
 	}
 
-	if (to.meta.isAdmin) {
-		if (!user || !auth.isAdmin()) {
-			return next({
-				path: '/admin/login',
-				query: {
-					redirect: to.fullPath
-				}
-			})
-		}
-	}
-
-	if (to.meta.isBusiness) {
-		if (!user || !auth.isBusiness()) {
-			return next({
-				path: '/login',
-				query: {
-					redirect: to.fullPath
-				}
-			})
-		}
-	}
-
-	if (to.meta.requiresAuth) {
-		if (!user) {
-			return next({
-				path: '/login',
-				query: {
-					redirect: to.fullPath
-				}
-			})
-		}
-	}
-
-	next()
+	return next()
 })
 
 export default router

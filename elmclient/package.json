@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build"
+    "build": "vue-cli-service build",
+    "test": "node --experimental-default-type=module --experimental-test-isolation=none --test --test-concurrency=1",
+    "test:watch": "node --experimental-default-type=module --experimental-test-isolation=none --test --test-concurrency=1 --watch"
   },
   "dependencies": {
     "axios": "^1.9.0",

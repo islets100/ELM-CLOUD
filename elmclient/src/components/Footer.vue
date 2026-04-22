@@ -5,7 +5,7 @@
 				<i class="fa fa-home"></i>
 				<p>首页</p>
 			</li>
-			<li>
+			<li @click="toDiscover">
 				<i class="fa fa-compass"></i>
 				<p>发现</p>
 			</li>
@@ -22,68 +22,83 @@
 </template>
 
 <script>
-	import auth from '../utils/auth.js' // 根据实际路径调整
+import auth from '../utils/auth.js'
 
-	export default {
-		name: 'Footer',
-		methods: {
-			toIndex() {
+export default {
+	name: 'Footer',
+	methods: {
+		toIndex() {
+			this.$router.push({
+				path: '/index'
+			})
+		},
+		toDiscover() {
+			this.$router.push({
+				path: '/index'
+			})
+		},
+		toOrderList() {
+			if (auth.isLoggedIn()) {
+				this.$router.push('/userOrderList')
+			} else {
+				this.$router.push('/login')
+			}
+		},
+		toMy() {
+			if (auth.isLoggedIn()) {
 				this.$router.push({
-					path: '/index'
+					path: '/user'
 				})
-			},
-			toOrderList() {
-			  console.log('点击订单按钮，登录状态:', auth.isLoggedIn())
-			  if (auth.isLoggedIn()) {
-			    this.$router.push('/userOrderList')
-			  } else {
-			    this.$router.push('/login')
-			  }
-			},
-			toMy() {
-				if (auth.isLoggedIn()) {
-					this.$router.push({
-						path: '/user'
-					})
-				} else {
-					this.$router.push({
-						path: '/login'
-					})
-				}
+			} else {
+				this.$router.push({
+					path: '/login'
+				})
 			}
 		}
 	}
+}
 </script>
 
 <style>
-	.wrapper .footer {
-		width: 100%;
-		height: 14vw;
-		border-top: solid 1px #DDD;
-		background-color: #fff;
-		position: fixed;
-		left: 0;
-		bottom: 0;
-		display: flex;
-		justify-content: space-around;
-		align-items: center;
-	}
+.footer {
+	width: 100%;
+	width: 100vw;
+	height: 14vw;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	border-top: solid 1px #ddd;
+	background-color: #fff;
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	box-shadow: 0 -1vw 3vw rgba(15, 58, 109, 0.08);
+	z-index: 3000;
+}
 
-	.wrapper .footer li {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		color: #999;
-		user-select: none;
-		cursor: pointer;
-	}
+.footer li {
+	flex: 1;
+	width: 25%;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	color: #999;
+	user-select: none;
+	cursor: pointer;
+}
 
-	.wrapper .footer li p {
-		font-size: 2.8vw;
-	}
+.footer li p {
+	margin: 0.8vw 0 0;
+	font-size: 2.8vw;
+}
 
-	.wrapper .footer li i {
-		font-size: 5vw;
-	}
+.footer li i {
+	font-size: 5vw;
+}
 </style>

@@ -79,7 +79,7 @@ public class IntegralServiceImpl implements IntegralService {
     private static final int BIRTHDAY_ACTIVITY_INTEGRAL_MONTH = 10;
 
     @Override
-    public Integral addIntegral(Long userId, Integer amount, String earnChannel,
+    public Integral addIntegral(String userId, Integer amount, String earnChannel,
                                Long businessId, String description) {
         // 根据渠道决定有效期
         int expireDays = INTEGRAL_EXPIRE_DAYS;
@@ -110,7 +110,7 @@ public class IntegralServiceImpl implements IntegralService {
     }
 
     @Override
-    public List<Integral> consumeIntegral(Long userId, Integer amount, String spendChannel,
+    public List<Integral> consumeIntegral(String userId, Integer amount, String spendChannel,
                                           Long businessId, String description) {
         // 查询用户可用积分
         Integer availableIntegral = getAvailableIntegral(userId);
@@ -177,12 +177,12 @@ public class IntegralServiceImpl implements IntegralService {
     }
 
     @Override
-    public List<Integral> getIntegralDetails(Long userId) {
+    public List<Integral> getIntegralDetails(String userId) {
         return integralMapper.selectByUserIdOrderByCreateTimeDesc(userId);
     }
 
     @Override
-    public Integer getAvailableIntegral(Long userId) {
+    public Integer getAvailableIntegral(String userId) {
         // 获取所有可用且未过期的积分记录
         List<Integral> availableIntegrals = integralMapper.selectByUserIdAndStatusAndExpireTimeAfter(
                 userId, Integral.STATUS_AVAILABLE, LocalDateTime.now());
@@ -343,7 +343,7 @@ public class IntegralServiceImpl implements IntegralService {
     }
 
     @Override
-    public Integer signIn(Long userId) {
+    public Integer signIn(String userId) {
         LocalDate today = LocalDate.now();
 
         // 检查今天是否已签到
@@ -381,7 +381,7 @@ public class IntegralServiceImpl implements IntegralService {
     }
 
     @Override
-    public boolean isSignedInToday(Long userId) {
+    public boolean isSignedInToday(String userId) {
         LocalDate today = LocalDate.now();
         SignInRecord record = signInRecordMapper.findTodaySignIn(userId, today);
         return record != null;
@@ -389,7 +389,7 @@ public class IntegralServiceImpl implements IntegralService {
 
     @Override
     @Transactional
-    public Integer handleBirthdayIntegral(Long userId) {
+    public Integer handleBirthdayIntegral(String userId) {
         LocalDate today = LocalDate.now();
         Integer totalEarned = 0;
 
@@ -458,35 +458,35 @@ public class IntegralServiceImpl implements IntegralService {
     }
 
     @Override
-    public boolean hasEarnedBirthdayMonthlyIntegralToday(Long userId) {
+    public boolean hasEarnedBirthdayMonthlyIntegralToday(String userId) {
         LocalDate today = LocalDate.now();
         BirthdayIntegralRecord record = birthdayIntegralRecordMapper.findByUserIdAndRecordDate(userId, today);
         return record != null && record.getMonthlyEarned();
     }
 
     @Override
-    public boolean hasEarnedBirthdayIntegralToday(Long userId) {
+    public boolean hasEarnedBirthdayIntegralToday(String userId) {
         LocalDate today = LocalDate.now();
         BirthdayIntegralRecord record = birthdayIntegralRecordMapper.findByUserIdAndRecordDate(userId, today);
         return record != null && record.getBirthdayEarned();
     }
 
     @Override
-    public boolean canClaimBirthdayIntegral(Long userId) {
+    public boolean canClaimBirthdayIntegral(String userId) {
         // TODO: 需要实现从用户服务获取用户生日的逻辑
         // 这里暂时返回false，等用户服务集成后再实现
         return false;
     }
 
     @Override
-    public Integer claimBirthdayIntegral(Long userId) {
+    public Integer claimBirthdayIntegral(String userId) {
         // TODO: 需要实现从用户服务获取用户生日的逻辑
         // 这里暂时返回0，等用户服务集成后再实现
         return 0;
     }
 
     @Override
-    public IntegralStatistics getIntegralStatistics(Long userId) {
+    public IntegralStatistics getIntegralStatistics(String userId) {
         // 查询所有积分记录
         List<Integral> allIntegrals = integralMapper.selectByUserIdOrderByCreateTimeDesc(userId);
 
@@ -530,7 +530,7 @@ public class IntegralServiceImpl implements IntegralService {
     }
 
     @Override
-    public List<Integral> getAvailableIntegralDetails(Long userId) {
+    public List<Integral> getAvailableIntegralDetails(String userId) {
         // 获取所有积分记录
         List<Integral> allIntegrals = integralMapper.selectByUserIdOrderByCreateTimeDesc(userId);
 

@@ -23,7 +23,7 @@
               v-model="user.username"
               placeholder="请输入用户名（登录用）"
               @input="clearError"
-              @blur="validateUsername"
+              @blur="validateUsernameWithHelper"
             >
           </div>
         </li>
@@ -63,6 +63,7 @@
 <script>
 import Footer from '../components/Footer.vue';
 import axios from 'axios';
+import { validateRegisterUsername } from '../utils/register';
 
 export default {
   name: 'Register',
@@ -104,7 +105,7 @@ export default {
     /** 核心注册逻辑：接口调用 + 状态处理 */
     async handleRegister() {
       // 二次校验：防止绕过blur事件提交
-      this.validateUsername();
+      this.validateUsernameWithHelper();
       if (!this.isUsernameValid) return;
 
       const username = this.user.username.trim();
@@ -143,6 +144,12 @@ export default {
     },
 
     /** 跳转到登录页：支持从注册页快速切换 */
+    validateUsernameWithHelper() {
+      const result = validateRegisterUsername(this.user.username);
+      this.errorMsg = result.valid ? '' : result.message;
+      this.isUsernameValid = result.valid;
+    },
+
     goToLogin() {
       this.$router.push('/login');
     }
@@ -150,9 +157,8 @@ export default {
   // 监听用户名变化，实时更新校验状态（仅判断“非空”）
   watch: {
     'user.username'(val) {
-      const trimmedVal = val.trim();
       // 仅判断“非空”，删除长度相关判断
-      this.isUsernameValid = trimmedVal !== '';
+      this.isUsernameValid = validateRegisterUsername(val).valid;
     }
   }
 };

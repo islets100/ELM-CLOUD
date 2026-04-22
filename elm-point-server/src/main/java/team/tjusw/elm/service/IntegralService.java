@@ -19,7 +19,7 @@ public interface IntegralService {
      * @param description 业务描述
      * @return 积分记录
      */
-    Integral addIntegral(Long userId, Integer amount, String earnChannel,
+    Integral addIntegral(String userId, Integer amount, String earnChannel,
                         Long businessId, String description);
 
     /**
@@ -31,7 +31,7 @@ public interface IntegralService {
      * @param description 业务描述
      * @return 积分记录列表
      */
-    List<Integral> consumeIntegral(Long userId, Integer amount, String spendChannel,
+    List<Integral> consumeIntegral(String userId, Integer amount, String spendChannel,
                                   Long businessId, String description);
 
     /**
@@ -39,14 +39,14 @@ public interface IntegralService {
      * @param userId 用户ID
      * @return 积分记录列表
      */
-    List<Integral> getIntegralDetails(Long userId);
+    List<Integral> getIntegralDetails(String userId);
 
     /**
      * 查询用户当前可用积分
      * @param userId 用户ID
      * @return 可用积分数量
      */
-    Integer getAvailableIntegral(Long userId);
+    Integer getAvailableIntegral(String userId);
 
     /**
      * 处理积分过期
@@ -111,63 +111,63 @@ public interface IntegralService {
      * @param userId 用户ID
      * @return 签到获得的积分数量，如果今天已签到返回0
      */
-    Integer signIn(Long userId);
+    Integer signIn(String userId);
 
     /**
      * 检查用户今天是否已签到
      * @param userId 用户ID
      * @return 是否已签到
      */
-    boolean isSignedInToday(Long userId);
+    boolean isSignedInToday(String userId);
 
     /**
      * 处理用户生日积分发放
      * @param userId 用户ID
      * @return 获得的积分总数
      */
-    Integer handleBirthdayIntegral(Long userId);
+    Integer handleBirthdayIntegral(String userId);
 
     /**
      * 检查用户今天是否已获得生日月度积分
      * @param userId 用户ID
      * @return 是否已获得
      */
-    boolean hasEarnedBirthdayMonthlyIntegralToday(Long userId);
+    boolean hasEarnedBirthdayMonthlyIntegralToday(String userId);
 
     /**
      * 检查用户今天是否已获得生日当天积分
      * @param userId 用户ID
      * @return 是否已获得
      */
-    boolean hasEarnedBirthdayIntegralToday(Long userId);
+    boolean hasEarnedBirthdayIntegralToday(String userId);
 
     /**
      * 判断用户是否可以领取生日积分
      * @param userId 用户ID
      * @return 是否可以领取
      */
-    boolean canClaimBirthdayIntegral(Long userId);
+    boolean canClaimBirthdayIntegral(String userId);
 
     /**
      * 用户手动领取生日积分
      * @param userId 用户ID
      * @return 领取的积分数量
      */
-    Integer claimBirthdayIntegral(Long userId);
+    Integer claimBirthdayIntegral(String userId);
 
     /**
      * 获取用户积分统计信息（总数、可用、过期等）
      * @param userId 用户ID
      * @return 积分统计信息
      */
-    IntegralStatistics getIntegralStatistics(Long userId);
+    IntegralStatistics getIntegralStatistics(String userId);
 
     /**
      * 获取用户可用积分的详细信息列表
      * @param userId 用户ID
      * @return 可用积分详细信息列表
      */
-    List<Integral> getAvailableIntegralDetails(Long userId);
+    List<Integral> getAvailableIntegralDetails(String userId);
 
     /**
      * 积分统计信息类

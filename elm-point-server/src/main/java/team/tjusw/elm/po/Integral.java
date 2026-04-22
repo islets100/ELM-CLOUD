@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
  */
 public class Integral {
     private Integer id;
-    private Long userId;
+    private String userId;
     private Integer amount;
     private String type;  // INCREASE-增加, DECREASE-减少
     private String status;  // AVAILABLE-可用, USED-已使用, EXPIRED-已过期
@@ -45,7 +45,7 @@ public class Integral {
     public Integral() {
     }
 
-    public Integral(Long userId, Integer amount, String type, String status,
+    public Integral(String userId, Integer amount, String type, String status,
                    String channel, LocalDateTime expireTime,
                    Long businessId, String description) {
         this.userId = userId;
@@ -68,11 +68,11 @@ public class Integral {
         this.id = id;
     }
 
-    public Long getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
 

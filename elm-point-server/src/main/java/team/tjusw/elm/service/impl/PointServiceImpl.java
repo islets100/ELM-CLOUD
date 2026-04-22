@@ -23,7 +23,7 @@ public class PointServiceImpl implements PointService {
 
 	@Override
 	public int getBalanceByUserId(String userId) {
-		return integralService.getAvailableIntegral(Long.valueOf(userId));
+		return integralService.getAvailableIntegral(userId);
 	}
 
 	@Override
@@ -33,8 +33,8 @@ public class PointServiceImpl implements PointService {
 		if (points <= 0) {
 			return 0;
 		}
-		integralService.addIntegral(Long.valueOf(order.getUserId()), points, Integral.CHANNEL_CONSUMPTION,
-				Long.valueOf(orderId), "订单消费获得积分");
+		integralService.addIntegral(order.getUserId(), points, Integral.CHANNEL_CONSUMPTION, Long.valueOf(orderId),
+				"订单消费获得积分");
 		return points;
 	}
 
@@ -44,8 +44,8 @@ public class PointServiceImpl implements PointService {
 			return 1;
 		}
 		OrderInfo order = getOrderInfo(orderId);
-		integralService.consumeIntegral(Long.valueOf(order.getUserId()), pointAmount,
-				Integral.CHANNEL_ORDER_DEDUCTION, Long.valueOf(orderId), "订单积分抵扣");
+		integralService.consumeIntegral(order.getUserId(), pointAmount, Integral.CHANNEL_ORDER_DEDUCTION,
+				Long.valueOf(orderId), "订单积分抵扣");
 		return 1;
 	}
 

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import auth from '../utils/auth'
+import auth from '../utils/auth.js'
 
 axios.interceptors.request.use(config => {
 	const token = auth.getToken();
