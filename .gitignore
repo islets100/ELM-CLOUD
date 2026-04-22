@@ -18,7 +18,15 @@
 **/*.iml
 
 # VS Code local workspace state
+**/.vscode/
 **/.vscode/*.code-workspace
+
+# Codex local artifacts
+.codex/
+.codex-logs/
+
+# Scratch files
+Untitled-*
 
 # Runtime logs and crash dumps
 **/*.log
