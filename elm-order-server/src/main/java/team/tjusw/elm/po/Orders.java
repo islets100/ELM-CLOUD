@@ -1,16 +1,19 @@
 package team.tjusw.elm.po;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.util.List;
 
 public class Orders {
+	@JsonProperty("id")
 	private Integer orderId;
 	private String userId;
 	private Integer businessId;
 	private String orderDate;
 	private BigDecimal orderTotal;
-	private Integer daId; 
-	private Integer orderState; 
+	private Integer daId;
+	private Integer orderState;
+	@JsonProperty("orderDetails")
 	private List<OrderDetailet> list;
 
 	public Integer getOrderId() {

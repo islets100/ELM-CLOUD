@@ -145,13 +145,27 @@ public class OrdersServiceImpl implements OrdersService {
 		BigDecimal deductedAmount = pointClient.getDeductedAmount(orderId, pointAmount).getResult();
 		BigDecimal amount = order.getOrderTotal().subtract(deductedAmount);
 
-		if (virtualWalletClient.transfer(userId, businessUserId, amount).getCode() != 200) {
+		if (virtualWalletClient.freezeFunds(orderId, userId, businessUserId, amount).getCode() != 200) {
 			return 0;
 		}
 		pointClient.earnPointByOrder(orderId);
 		ordersMapper.finishOrder(orderId);
 		pointClient.deductOrder(orderId, pointAmount);
 		return 200;
+	}
+
+	@Override
+	public Orders confirmReceipt(Integer orderId) {
+		Orders order = ordersMapper.getOrdersById(orderId);
+		if (order == null || order.getOrderState() != 3) {
+			return null;
+		}
+		CommonResult<Integer> result = virtualWalletClient.releaseFrozenFunds(orderId);
+		if (result.getCode() != 200) {
+			return null;
+		}
+		ordersMapper.updateOrderState(orderId, 4);
+		return getOrdersById(orderId);
 	}
 
 	private List<Orders> attachOrderDetails(List<Orders> orders) {

@@ -133,6 +133,8 @@ export default {
           this.errorMsg = '用户名已被注册，请更换其他用户名';
         } else if (error.response?.status === 400) {
           this.errorMsg = '请求参数错误，请检查用户名格式';
+        } else if (error.response?.status === 404) {
+          this.errorMsg = '注册接口不可用，请稍后重试';
         } else if (error.response?.status === 500) {
           this.errorMsg = '服务器繁忙，请稍后重试';
         } else {

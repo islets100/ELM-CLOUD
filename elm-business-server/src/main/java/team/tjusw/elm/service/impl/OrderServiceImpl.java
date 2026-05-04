@@ -130,7 +130,7 @@ public class OrderServiceImpl implements OrderService {
     public int checkoutOrder(Integer orderId) {
         Order order = new Order();
         order.setOrderId(orderId);
-        order.setOrderState(3); // 3: 已完成
+        order.setOrderState(4); // 4: 已确认收货
         order.setCheckoutTime(new Date());
         int result = orderMapper.updateOrderCheckoutTime(order);
         

@@ -1,5 +1,6 @@
 package team.tjusw.elm.po;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 
 public class Business {
@@ -9,6 +10,7 @@ public class Business {
 	private String businessExplain;
 	private String businessImg;
 	private Integer orderTypeId;
+	@JsonProperty("startPrice")
 	private BigDecimal starPrice;
 	private BigDecimal deliveryPrice;
 	private String remarks;
@@ -68,10 +70,6 @@ public class Business {
 
 	public void setStarPrice(BigDecimal starPrice) {
 		this.starPrice = starPrice;
-	}
-
-	public void setStartPrice(BigDecimal startPrice) {
-		this.starPrice = startPrice;
 	}
 
 	public BigDecimal getDeliveryPrice() {

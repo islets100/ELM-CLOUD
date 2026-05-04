@@ -128,7 +128,7 @@ public class OrdersControllerTest {
 		when(pointClient.getBalanceByUserId("user1001")).thenReturn(new CommonResult<>(200, "ok", 500));
 		when(pointClient.getDeductedAmount(1, 100))
 				.thenReturn(new CommonResult<>(200, "ok", new BigDecimal("1.00")));
-		when(virtualWalletClient.transfer("user1001", "merchant1001", new BigDecimal("22.50")))
+		when(virtualWalletClient.freezeFunds(1, "user1001", "merchant1001", new BigDecimal("22.50")))
 				.thenReturn(new CommonResult<>(200, "ok", 1));
 		when(pointClient.earnPointByOrder(1)).thenReturn(new CommonResult<>(200, "ok", 1));
 		when(pointClient.deductOrder(1, 100)).thenReturn(new CommonResult<>(200, "ok", 1));
@@ -153,7 +153,7 @@ public class OrdersControllerTest {
 		when(pointClient.getBalanceByUserId("user1001")).thenReturn(new CommonResult<>(200, "ok", 500));
 		when(pointClient.getDeductedAmount(1, 50))
 				.thenReturn(new CommonResult<>(200, "ok", new BigDecimal("0.50")));
-		when(virtualWalletClient.transfer("user1001", "merchant1001", new BigDecimal("23.00")))
+		when(virtualWalletClient.freezeFunds(1, "user1001", "merchant1001", new BigDecimal("23.00")))
 				.thenReturn(new CommonResult<>(200, "ok", 1));
 		when(pointClient.earnPointByOrder(1)).thenReturn(new CommonResult<>(200, "ok", 1));
 		when(pointClient.deductOrder(1, 50)).thenReturn(new CommonResult<>(200, "ok", 1));

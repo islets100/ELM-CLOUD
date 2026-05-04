@@ -50,7 +50,7 @@ class BusinessControllerTest {
 		business.setBusinessName("Demo Shop");
 		business.setBusinessAddress("Tianjin");
 		business.setOrderTypeId(1);
-		business.setStartPrice(new BigDecimal("20.00"));
+		business.setStarPrice(new BigDecimal("20.00"));
 		business.setDeliveryPrice(new BigDecimal("4.00"));
 		business.setUserId("merchant1001");
 
@@ -72,7 +72,7 @@ class BusinessControllerTest {
 		business.setBusinessName("Demo Shop Plus");
 		business.setBusinessAddress("Beijing");
 		business.setOrderTypeId(1);
-		business.setStartPrice(new BigDecimal("25.00"));
+		business.setStarPrice(new BigDecimal("25.00"));
 		business.setDeliveryPrice(new BigDecimal("5.00"));
 		business.setUserId("merchant1001");
 

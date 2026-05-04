@@ -122,7 +122,7 @@ class UserControllerTest {
 		User user = new User();
 		user.setUserId("u1001");
 		when(userService.getUserByIdByPass(any(User.class))).thenReturn(user);
-		when(jwtTokenProvider.createToken("u1001", true)).thenReturn("jwt-ok");
+		when(jwtTokenProvider.createToken("u1001", true, null)).thenReturn("jwt-ok");
 
 		mockMvc.perform(post("/api/auth").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"username\":\"u1001\",\"password\":\"123456\",\"rememberMe\":true}"))

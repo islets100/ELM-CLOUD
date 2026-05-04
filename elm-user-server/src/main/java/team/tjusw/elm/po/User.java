@@ -9,6 +9,7 @@ public class User {
     private Integer userSex;
     private String userImg;
     private Integer delTag;
+    private Integer userType;
     private List<Authority> authorities;
 
     public String getUserId() {
@@ -46,6 +47,12 @@ public class User {
     }
     public void setDelTag(Integer delTag) {
         this.delTag = delTag;
+    }
+    public Integer getUserType() {
+        return userType;
+    }
+    public void setUserType(Integer userType) {
+        this.userType = userType;
     }
     public List<Authority> getAuthorities() {
         return authorities;

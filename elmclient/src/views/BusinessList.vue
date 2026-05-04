@@ -163,7 +163,10 @@ export default {
 
 		async getCartList() {
 			try {
-				const response = await this.$axios.get(`/api/carts/user/${this.user.id}`)
+				const response = await this.$axios.get(`/api/carts/user/${this.user.id}`, {
+						__skipFallbackPrompt: true,
+						__skipFallbackRetry: true
+					})
 				if (!response.data.success) {
 					return
 				}

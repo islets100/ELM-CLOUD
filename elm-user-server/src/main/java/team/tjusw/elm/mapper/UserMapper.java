@@ -26,7 +26,7 @@ public interface UserMapper {
  @Select("select * from user where delTag = 1")
  public List<User> listUsers();
  
- @Insert("insert into user values(#{userId},#{password},#{userName},#{userSex},null,1)")
+ @Insert("insert into user values(#{userId},#{password},#{userName},#{userSex},null,1,#{userType})")
  public int saveUser(User user);
 
  @Update("update user set password=#{password} where userId=#{userId}")

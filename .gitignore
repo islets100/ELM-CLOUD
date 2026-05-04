@@ -44,6 +44,21 @@ Untitled-*
 .DS_Store
 Thumbs.db
 
+# LaTeX build artifacts
+**/*.aux
+**/*.out
+**/*.toc
+**/*.fls
+**/*.fdb_latexmk
+**/*.synctex*
+**/*.xdv
+**/*.thm
+
+# Generated PDFs (but keep source figure PDFs for LaTeX)
+*.pdf
+!report_tex_template/figures/*.pdf
+!report_tex_template/tjumain.pdf
+
 # Docker local data volumes
 docker/mysql/data/
 docker/redis/data/

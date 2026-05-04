@@ -3,55 +3,48 @@
     <header>
       <p>店铺订单管理</p>
     </header>
-    
-    <!-- 订单状态筛选 -->
+
     <div class="order-filter">
-      <button :class="{ active: status === '' }" @click="status = ''">全部</button>
-      <button :class="{ active: status === '0' }" @click="status = '0'">待支付</button>
-      <button :class="{ active: status === '1' }" @click="status = '1'">已接单</button>
-      <button :class="{ active: status === '2' }" @click="status = '2'">已完成</button>
-      <button :class="{ active: status === '3' }" @click="status = '3'">已取消</button>
+      <button :class="{ active: orderState === null }" @click="orderState = null">全部</button>
+      <button :class="{ active: orderState === 1 }" @click="orderState = 1">待接单</button>
+      <button :class="{ active: orderState === 2 }" @click="orderState = 2">配送中</button>
+      <button :class="{ active: orderState === 3 }" @click="orderState = 3">已完成</button>
     </div>
-    
-    <!-- 订单列表 -->
+
     <div class="order-list">
-      <div v-for="order in orders" :key="order.orderId" class="order-item">
+      <div v-if="loading" class="no-orders">正在加载订单...</div>
+      <div v-else-if="filteredOrders.length === 0" class="no-orders">暂无订单</div>
+      <div v-for="order in filteredOrders" :key="order.id" class="order-item">
         <div class="order-header">
-          <p>订单编号: {{ order.orderId }}</p>
-          <p>下单时间: {{ order.createTime }}</p>
-          <p class="status" :class="getStatusClass(order.status)">
-            {{ getStatusText(order.status) }}
+          <p>订单编号: {{ order.id }}</p>
+          <p>下单时间: {{ formatDate(order.orderDate) }}</p>
+          <p class="status" :class="getStatusClass(order.orderState)">
+            {{ getStatusText(order.orderState) }}
           </p>
         </div>
-        
+
         <div class="order-foods">
-          <p v-for="food in order.orderFoods" :key="food.foodId">
-            {{ food.foodName }} x {{ food.quantity }}
+          <p v-for="detail in order.orderDetails" :key="detail.id || `${order.id}-${detail.foodId}`">
+            {{ detail.foodName }} x {{ detail.quantity }}
           </p>
         </div>
-        
+
         <div class="order-footer">
-          <p>总金额: ¥{{ order.orderTotal }}</p>
+          <p>总金额: ¥{{ formatPrice(order.orderTotal) }}</p>
           <div class="order-actions">
-            <button v-if="order.status === '0'" @click="handleAccept(order.orderId)">接单</button>
-            <button v-if="order.status === '1'" @click="handleComplete(order.orderId)">完成</button>
-            <button v-if="order.status === '0'" @click="handleCancel(order.orderId)">取消</button>
+            <button v-if="order.orderState === 1" @click="handleAccept(order.id)">接单</button>
+            <button v-if="order.orderState === 2" @click="handleComplete(order.id)">完成</button>
           </div>
         </div>
       </div>
-      
-      <div v-if="orders.length === 0" class="no-orders">
-        暂无订单
-      </div>
     </div>
-    
-    <!-- 底部导航 -->
+
     <div class="merchant-footer">
       <div class="footer-item" @click="$router.push('/business')">
         <i class="fa fa-home"></i>
         <span>首页</span>
       </div>
-      <div class="footer-item active" @click="$router.push('/businessOrders')">
+      <div class="footer-item active" @click="$router.push('/orderList')">
         <i class="fa fa-list-alt"></i>
         <span>订单</span>
       </div>
@@ -64,209 +57,160 @@
 </template>
 
 <script>
+import auth from '../utils/auth'
+
 export default {
-  name: 'BusinessOrders',
+  name: 'OrderList',
   data() {
     return {
-      orders: [], // 订单列表
-      status: '', // 筛选状态（空=全部）
-      businessId: 'test_business_123', // 模拟商家ID（后续从接口获取）
-      refreshTimer: null // 定时刷新计时器
-    };
+      orders: [],
+      businessId: null,
+      foodMap: {},
+      orderState: null,
+      loading: false,
+      refreshTimer: null
+    }
+  },
+  computed: {
+    filteredOrders() {
+      if (this.orderState === null) {
+        return this.orders
+      }
+      return this.orders.filter(order => order.orderState === this.orderState)
+    }
   },
   created() {
-    // 1. 验证商家身份（真实场景保留）
-    const user = this.$getSessionStorage('user');
-    if (!user || user.userType !== 1) {
-      this.$router.push('/index');
-      return;
+    const user = auth.getUserInfo()
+    if (!user || auth.isBusiness()) {
+      this.$router.push('/index')
+      return
     }
-
-    // 2. 初始化订单数据（真实场景：先获取商家ID，再拉取订单）
-    // this.getBusinessId(); // 真实场景：从用户ID获取商家ID
-    this.getOrders(); // 拉取订单列表
-
-    // 3. 定时刷新（核心：用户下单后自动同步，30秒一次）
-    this.startRefreshTimer();
+    this.loadBusinessAndOrders()
+    this.startRefreshTimer()
   },
   beforeUnmount() {
-    // 页面销毁时清除定时器，避免内存泄漏
-    this.clearRefreshTimer();
+    this.clearRefreshTimer()
   },
   methods: {
-    // 真实场景：从用户ID获取商家ID（当前注释，用模拟ID）
-    getBusinessId() {
-      const userId = this.$getSessionStorage('user').userId;
-      this.$axios.post('BusinessController/getBusinessByUserId', this.$qs.stringify({ userId }))
-        .then(res => {
-          if (res.data.businessId) {
-            this.businessId = res.data.businessId;
-            this.getOrders(); // 获取商家ID后拉取订单
-          }
-        })
-        .catch(error => {
-          console.error('获取商家ID失败:', error);
-        });
+    formatPrice(value) {
+      return Number(value || 0).toFixed(2)
     },
+    formatDate(value) {
+      if (!value) return ''
+      return String(value).replace('T', ' ').slice(0, 19)
+    },
+    buildHeaders() {
+      const token = auth.getToken()
+      return token ? { Authorization: `Bearer ${token}` } : {}
+    },
+    getStatusText(orderState) {
+      if (orderState === 1) return '待接单'
+      if (orderState === 2) return '配送中'
+      if (orderState === 3) return '已完成'
+      return '未支付'
+    },
+    getStatusClass(orderState) {
+      if (orderState === 1) return 'pending'
+      if (orderState === 2) return 'accepted'
+      if (orderState === 3) return 'completed'
+      return ''
+    },
+    async loadBusinessAndOrders() {
+      const user = auth.getUserInfo()
+      const userId = user.userId || user.id
+      if (!userId) return
 
-    // 拉取订单列表（核心：同步用户新下单的关键）
-    getOrders() {
-      // ===================== 真实接口调用（后续启用）=====================
-      /* this.$axios.post('OrdersController/listBusinessOrders', this.$qs.stringify({
-        businessId: this.businessId, // 商家唯一ID，确保只拉取当前店铺订单
-        status: this.status // 筛选状态
-      }))
-        .then(res => {
-          this.orders = res.data || []; // 接口返回最新订单列表
+      this.loading = true
+      try {
+        const businessResponse = await this.$axios.get(`/api/businesses/user/${userId}`, {
+          headers: this.buildHeaders()
         })
-        .catch(error => {
-          console.error('获取订单失败:', error);
-          this.orders = [];
-        }); */
-
-      // ===================== 模拟订单数据（当前使用，后续删除）=====================
-      this.orders = [
-        // 新下单的待处理订单（模拟用户刚创建的订单）
-        {
-          orderId: 'ORD' + Date.now().toString().slice(-6), // 动态生成订单号
-          createTime: new Date().toLocaleString('zh-CN', { 
-            year: 'numeric', month: '2-digit', day: '2-digit', 
-            hour: '2-digit', minute: '2-digit' 
-          }), // 实时时间
-          status: '0', // 待处理（用户刚下单）
-          orderTotal: 68.5, // 订单总价
-          orderFoods: [
-            { foodId: 'f001', foodName: '珍珠奶茶', quantity: 2 },
-            { foodId: 'f003', foodName: '巧克力圣代', quantity: 1 }
-          ]
-        },
-        // 已存在的订单（不同状态）
-        {
-          orderId: 'ORD24092101',
-          createTime: '2024-09-21 10:30',
-          status: '1', // 已接单
-          orderTotal: 36,
-          orderFoods: [
-            { foodId: 'f002', foodName: '草莓奶昔', quantity: 1 },
-            { foodId: 'f004', foodName: '蓝莓气泡水', quantity: 1 }
-          ]
-        },
-        {
-          orderId: 'ORD24092102',
-          createTime: '2024-09-21 09:15',
-          status: '2', // 已完成
-          orderTotal: 52,
-          orderFoods: [
-            { foodId: 'f001', foodName: '珍珠奶茶', quantity: 3 },
-            { foodId: 'f003', foodName: '巧克力圣代', quantity: 1 }
-          ]
-        },
-        {
-          orderId: 'ORD24092103',
-          createTime: '2024-09-21 08:45',
-          status: '3', // 已取消
-          orderTotal: 28,
-          orderFoods: [
-            { foodId: 'f002', foodName: '草莓奶昔', quantity: 1 },
-            { foodId: 'f004', foodName: '蓝莓气泡水', quantity: 1 }
-          ]
+        const businesses = Array.isArray(businessResponse.data.data) ? businessResponse.data.data : []
+        if (!businesses.length) {
+          this.orders = []
+          return
         }
-      ];
-    },
+        const business = businesses[0]
+        this.businessId = business.id
 
-    // 获取订单状态文本
-    getStatusText(status) {
-      switch(status) {
-        case '0': return '待处理';
-        case '1': return '已接单';
-        case '2': return '已完成';
-        case '3': return '已取消';
-        default: return '未知状态';
+        const [foodResponse, orderResponse] = await Promise.all([
+          this.$axios.get(`/api/foods/business/${this.businessId}`, { headers: this.buildHeaders() }),
+          this.$axios.get(`/api/orders/business/${this.businessId}`, { headers: this.buildHeaders() })
+        ])
+
+        const foods = Array.isArray(foodResponse.data.data) ? foodResponse.data.data : []
+        this.foodMap = foods.reduce((map, food) => {
+          map[food.id] = food
+          return map
+        }, {})
+
+        const orders = Array.isArray(orderResponse.data.data) ? orderResponse.data.data : []
+        this.orders = orders.map(order => this.decorateOrder(order))
+      } catch (error) {
+        console.error('加载订单失败:', error)
+        this.orders = []
+      } finally {
+        this.loading = false
       }
     },
-
-    // 获取订单状态样式
-    getStatusClass(status) {
-      switch(status) {
-        case '0': return 'pending';
-        case '1': return 'accepted';
-        case '2': return 'completed';
-        case '3': return 'cancelled';
-        default: return '';
-      }
-    },
-
-    // 接单（状态改为1）
-    handleAccept(orderId) {
-      this.updateOrderStatus(orderId, '1', '接单成功');
-    },
-
-    // 完成订单（状态改为2）
-    handleComplete(orderId) {
-      this.updateOrderStatus(orderId, '2', '订单已完成');
-    },
-
-    // 取消订单（状态改为3）
-    handleCancel(orderId) {
-      this.updateOrderStatus(orderId, '3', '订单已取消');
-    },
-
-    // 更新订单状态（核心：同步后端状态）
-    updateOrderStatus(orderId, targetStatus, successMsg) {
-      // ===================== 真实接口调用（后续启用）=====================
-      /* this.$axios.post('OrdersController/updateOrderStatus', this.$qs.stringify({
-        orderId: orderId,
-        status: targetStatus,
-        businessId: this.businessId // 验证商家权限
-      }))
-        .then(res => {
-          if (res.data > 0) {
-            alert(successMsg);
-            this.getOrders(); // 刷新订单列表
-          } else {
-            alert('操作失败，请重试');
+    decorateOrder(order) {
+      const details = Array.isArray(order.orderDetails) ? order.orderDetails : []
+      return {
+        ...order,
+        orderDetails: details.map(detail => {
+          const food = this.foodMap[detail.foodId] || {}
+          return {
+            ...detail,
+            foodName: food.foodName || `菜品 #${detail.foodId}`
           }
         })
-        .catch(error => {
-          console.error('更新订单状态失败:', error);
-          alert('网络错误，请重试');
-        }); */
-
-      // ===================== 模拟状态更新（当前使用，后续删除）=====================
-      const orderIndex = this.orders.findIndex(order => order.orderId === orderId);
-      if (orderIndex !== -1) {
-        this.orders[orderIndex].status = targetStatus;
-        alert(successMsg);
-      } else {
-        alert('操作失败，订单不存在');
       }
     },
-
-    // 启动定时刷新（30秒一次，确保用户下单后自动同步）
+    async updateOrderState(orderId, targetState, successMsg) {
+      try {
+        const response = await this.$axios.put(`/api/orders/${orderId}/state`, null, {
+          params: { orderState: targetState },
+          headers: this.buildHeaders()
+        })
+        if (!response.data.success) {
+          throw new Error(response.data.message || 'update failed')
+        }
+        const updatedOrder = this.decorateOrder(response.data.data)
+        this.orders = this.orders.map(item => (item.id === orderId ? updatedOrder : item))
+        alert(successMsg)
+      } catch (error) {
+        console.error('更新订单状态失败:', error)
+        alert('操作失败，请重试')
+      }
+    },
+    handleAccept(orderId) {
+      this.updateOrderState(orderId, 2, '接单成功')
+    },
+    handleComplete(orderId) {
+      this.updateOrderState(orderId, 3, '订单已完成')
+    },
     startRefreshTimer() {
       this.refreshTimer = setInterval(() => {
-        console.log('自动刷新订单列表...');
-        this.getOrders();
-      }, 30000); // 30秒 = 30000毫秒
+        if (this.businessId) {
+          this.loadBusinessAndOrders()
+        }
+      }, 30000)
     },
-
-    // 清除定时刷新
     clearRefreshTimer() {
       if (this.refreshTimer) {
-        clearInterval(this.refreshTimer);
-        this.refreshTimer = null;
+        clearInterval(this.refreshTimer)
+        this.refreshTimer = null
       }
     }
   },
   watch: {
-    // 筛选状态变化时，重新拉取订单
-    status() {
+    orderState() {
       if (this.businessId) {
-        this.getOrders();
+        this.loadBusinessAndOrders()
       }
     }
   }
-};
+}
 </script>
 
 <style scoped>

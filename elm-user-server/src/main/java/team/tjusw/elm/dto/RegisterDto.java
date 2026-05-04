@@ -6,6 +6,7 @@ public class RegisterDto {
 	private String password;
 	private String userName;
 	private Integer userSex;
+	private Integer userType;
 
 	public String getUsername() {
 		return username;
@@ -45,6 +46,14 @@ public class RegisterDto {
 
 	public void setUserSex(Integer userSex) {
 		this.userSex = userSex;
+	}
+
+	public Integer getUserType() {
+		return userType;
+	}
+
+	public void setUserType(Integer userType) {
+		this.userType = userType;
 	}
 }
 

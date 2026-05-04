@@ -138,19 +138,13 @@ export default {
       try {
         const token = auth.getToken()
         // 权限强化：严格根据用户类型绑定权限，避免混淆
-        const authority = role === 'BUSINESS' 
-          ? 'BUSINESS'  // 店主强制绑定BUSINESS权限
-          : 'USER';     // 普通用户绑定USER权限
-
         const personData = {
+          userId: username.trim(),
           username: username.trim(),
-          activated: true,
-          authorities: [{ name: authority }], // 权限与用户类型严格对应
-          lastName: lastName.trim(),
-          firstName: firstName.trim(),
-          phone: phone.trim(),
-          email: (this.userForm.email || '').trim(),
-          address: (this.userForm.address || '').trim()
+          userName: `${lastName.trim()}${firstName.trim()}`,
+          password: 'password',
+          userSex: 1,
+          userType: role === 'BUSINESS' ? 1 : 0
         };
 
         console.log('提交的用户数据（含权限）:', personData)
@@ -162,7 +156,7 @@ export default {
           }
         });
 
-        if (response.status === 200) {
+        if (response.data && response.data.success) {
           alert('用户创建成功！');
           this.$router.push('/admin/users');
         } else {

@@ -108,6 +108,8 @@ const foodImages = [
 	require('../assets/sp12.png')
 ]
 
+import { isFallbackResponse } from '../utils/fallbackRetry'
+
 export default {
 	name: 'BusinessInfo',
 	data() {
@@ -210,7 +212,10 @@ export default {
 
 		async loadCart() {
 			try {
-				const response = await this.$axios.get(`/api/carts/user/${this.user.id}/business/${this.businessId}`)
+				const response = await this.$axios.get(`/api/carts/user/${this.user.id}/business/${this.businessId}`, {
+						__skipFallbackPrompt: true,
+						__skipFallbackRetry: true
+					})
 				if (!response.data.success) {
 					return
 				}
@@ -259,7 +264,9 @@ export default {
 				})
 				if (!response.data.success) {
 					this.foodArr[index].quantity -= 1
-					alert(response.data.message || '加入购物车失败')
+					if (!isFallbackResponse(response.data)) {
+							alert(response.data.message || '加入购物车失败')
+						}
 				}
 			} catch (error) {
 				console.error('Failed to save cart item:', error)

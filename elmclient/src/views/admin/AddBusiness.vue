@@ -271,13 +271,13 @@
 					
 					// 构造提交数据
 					const submitData = {
-						...this.businessForm,
-						businessOwner: {
-							id: Number(this.selectedMerchantId) // 关联选中的商家
-						},
-						deleted: false,
-						createTime: new Date().toISOString(),
-						updateTime: new Date().toISOString()
+						businessName: this.businessForm.businessName,
+						businessAddress: this.businessForm.businessAddress,
+						businessExplain: this.businessForm.businessExplain,
+						orderTypeId: this.businessForm.orderTypeId,
+						startPrice: Number(this.businessForm.startPrice || 0),
+						deliveryPrice: Number(this.businessForm.deliveryPrice || 0),
+						userId: String(this.selectedMerchantId)
 					}
 
 					console.log('提交的店铺数据:', submitData)

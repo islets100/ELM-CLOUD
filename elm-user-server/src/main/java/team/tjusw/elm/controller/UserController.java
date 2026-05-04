@@ -101,7 +101,7 @@ public class UserController {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
 		}
 		boolean rememberMe = Boolean.TRUE.equals(loginDto.getRememberMe());
-		String jwt = jwtTokenProvider.createToken(authResult.getUserId(), rememberMe);
+		String jwt = jwtTokenProvider.createToken(authResult.getUserId(), rememberMe, authResult.getUserType());
 		HttpHeaders headers = new HttpHeaders();
 		headers.add("Authorization", "Bearer " + jwt);
 		return new ResponseEntity<JwtTokenDto>(new JwtTokenDto(jwt), headers, HttpStatus.OK);
@@ -118,6 +118,7 @@ public class UserController {
 		String userName = StringUtils.hasText(registerDto.getUserName()) ? registerDto.getUserName().trim() : legacyUsername;
 		String password = StringUtils.hasText(registerDto.getPassword()) ? registerDto.getPassword() : "password";
 		Integer userSex = registerDto.getUserSex() != null ? registerDto.getUserSex() : 1;
+		Integer userType = registerDto.getUserType() != null ? registerDto.getUserType() : 0;
 
 		if (!StringUtils.hasText(userId) || !StringUtils.hasText(userName) || !StringUtils.hasText(password)) {
 			return new CommonResult<User>(400, "missing required fields", null);
@@ -128,6 +129,7 @@ public class UserController {
 		user.setPassword(password);
 		user.setUserName(userName);
 		user.setUserSex(userSex);
+		user.setUserType(userType);
 		int ret = userService.saveUser(user);
 		if (ret == 0) {
 			return new CommonResult<User>(409, "user already exists", null);

@@ -31,10 +31,11 @@ public class JwtTokenProvider {
 		this.tokenValidityRememberMeSeconds = tokenValidityRememberMeSeconds;
 	}
 
-	public String createToken(String userId, boolean rememberMe) {
+	public String createToken(String userId, boolean rememberMe, Integer userType) {
 		long now = Instant.now().getEpochSecond();
 		long ttl = rememberMe ? tokenValidityRememberMeSeconds : tokenValiditySeconds;
-		return Jwts.builder().setSubject(userId).claim("auth", "USER").setIssuedAt(new Date(now * 1000))
+		String auth = userType != null && userType == 1 ? "BUSINESS" : ("admin".equals(userId) ? "ADMIN" : "USER");
+		return Jwts.builder().setSubject(userId).claim("auth", auth).setIssuedAt(new Date(now * 1000))
 				.setExpiration(new Date((now + ttl) * 1000)).signWith(secretKey, SignatureAlgorithm.HS512).compact();
 	}
 

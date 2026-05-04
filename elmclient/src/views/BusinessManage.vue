@@ -226,7 +226,7 @@ export default {
           businessExplain: this.form.businessExplain,
           businessImg: this.form.businessImg,
           orderTypeId: this.form.orderTypeId,
-          starPrice: Number(this.form.startPrice || 0),
+          startPrice: Number(this.form.startPrice || 0),
           deliveryPrice: Number(this.form.deliveryPrice || 0),
           remarks: this.form.remarks,
           userId: this.form.userId || this.getCurrentUserId()

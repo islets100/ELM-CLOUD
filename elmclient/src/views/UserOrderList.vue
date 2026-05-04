@@ -168,8 +168,21 @@ export default {
 			}
 		},
 
-		confirmReceipt() {
-			alert('当前订单服务未提供确认收货接口')
+		async confirmReceipt(item) {
+			if (!item?.id) return
+
+			try {
+				const response = await this.$axios.put(`/api/orders/${item.id}/confirm-receipt`)
+				if (response.data.success) {
+					item.orderState = 4
+					alert('确认收货成功')
+				} else {
+					alert(response.data.message || '确认收货失败')
+				}
+			} catch (error) {
+				console.error('确认收货失败:', error)
+				alert(error.response?.data?.message || '确认收货失败，请重试')
+			}
 		},
 
 		async loadOrders() {

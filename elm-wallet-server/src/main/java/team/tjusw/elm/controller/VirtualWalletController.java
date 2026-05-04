@@ -96,6 +96,27 @@ public class VirtualWalletController {
         return new CommonResult<>(200, "success", walletService.repayOverdraft(userId, amount));
     }
 
+    @PostMapping("/freezeFunds")
+    public CommonResult<Integer> freezeFunds(@RequestParam("orderId") Integer orderId,
+            @RequestParam("userId") String userId,
+            @RequestParam("businessUserId") String businessUserId,
+            @RequestParam("amount") BigDecimal amount) {
+        try {
+            return new CommonResult<>(200, "success", walletService.freezeFunds(orderId, userId, businessUserId, amount));
+        } catch (Exception e) {
+            return new CommonResult<>(500, e.getMessage(), 0);
+        }
+    }
+
+    @PostMapping("/releaseFrozenFunds")
+    public CommonResult<Integer> releaseFrozenFunds(@RequestParam("orderId") Integer orderId) {
+        try {
+            return new CommonResult<>(200, "success", walletService.releaseFrozenFunds(orderId));
+        } catch (Exception e) {
+            return new CommonResult<>(500, e.getMessage(), 0);
+        }
+    }
+
     @GetMapping("/getVirtualWallet")
     public CommonResult<VirtualWalletPO> getVirtualWallet(@RequestParam("userId") String userId) {
         return new CommonResult<>(200, "success", walletService.getVirtualWallet(userId));

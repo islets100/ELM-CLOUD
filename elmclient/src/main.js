@@ -13,6 +13,7 @@ import 'font-awesome/css/font-awesome.min.css'
 import axios from 'axios'
 import qs from 'qs'
 import { normalizeApiData, normalizeCommonResult } from './utils/apiResult.js'
+import { isFallbackResponse, shouldSuppressNativeAlert, showFallbackPrompt } from './utils/fallbackRetry.js'
 import {
 	getCurDate,
 	setSessionStorage,
@@ -26,33 +27,81 @@ import {
 // 设置 axios 的基础 url
 axios.defaults.baseURL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:14000/';
 
-// 添加 axios 响应拦截器，统一处理后端 CommonResult 格式
-axios.interceptors.response.use(
-	response => {
-		const data = response.data
+const originalAlert = window.alert.bind(window)
+window.alert = message => {
+	if (shouldSuppressNativeAlert()) {
+		return
+	}
 
-		// 如果后端返回的是 CommonResult 格式 {code, message, result}
-		// 但不处理登录接口（它直接返回 {id_token}）
-		if (
-			data &&
-			typeof data === 'object' &&
-			('code' in data || 'result' in data || 'success' in data || 'data' in data) &&
-			!('id_token' in data)
-		) {
-			return {
-				...response,
-				data: normalizeCommonResult(data)
-			}
-		}
+	originalAlert(message)
+}
 
-		// 其他情况保留原结构，但递归修复乱码与字段兼容
+function isCommonResultPayload(data) {
+	return !!(
+		data &&
+		typeof data === 'object' &&
+		('code' in data || 'result' in data || 'success' in data || 'data' in data) &&
+		!('id_token' in data)
+	)
+}
+
+function normalizeAxiosResponse(response) {
+	const data = response?.data
+
+	if (isCommonResultPayload(data)) {
 		return {
 			...response,
-			data: normalizeApiData(data)
+			data: normalizeCommonResult(data)
 		}
+	}
+
+	return {
+		...response,
+		data: normalizeApiData(data)
+	}
+}
+
+function maybeShowFallbackPrompt(response) {
+	const { data, config } = response || {}
+
+	if (
+		isFallbackResponse(data) &&
+		config?.__retryable &&
+		!config.__skipFallbackPrompt
+	) {
+		showFallbackPrompt(
+			{
+				...data.data,
+				message: data.message
+			},
+			config
+		)
+	}
+}
+
+// 请求拦截器：打标记并保留可重放配置
+axios.interceptors.request.use(config => {
+	config.__requestId = Math.random().toString(36).slice(2)
+	config.__retryable = !config.__skipFallbackRetry
+	config.__startedAt = Date.now()
+
+	return config
+}, error => Promise.reject(error))
+
+// 添加 axios 响应拦截器，统一处理后端 CommonResult 格式，并识别网关 fallback
+axios.interceptors.response.use(
+	response => {
+		const normalizedResponse = normalizeAxiosResponse(response)
+		maybeShowFallbackPrompt(normalizedResponse)
+		return normalizedResponse
 	},
 	error => {
-		// 统一错误处理
+		if (error?.response) {
+			const normalizedResponse = normalizeAxiosResponse(error.response)
+			error.response = normalizedResponse
+			maybeShowFallbackPrompt(normalizedResponse)
+		}
+
 		console.error('API Error:', error)
 		return Promise.reject(error)
 	}

@@ -47,7 +47,9 @@ export default {
 
 	checkSignInToday() {
 		return axios.get(`${API_BASE_URL}/api/integral/sign-in/check/${getCurrentUserId()}`, {
-			headers: getAuthHeaders()
+			headers: getAuthHeaders(),
+			__skipFallbackPrompt: true,
+			__skipFallbackRetry: true
 		})
 	},
 

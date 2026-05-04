@@ -1,0 +1,100 @@
+% !Mode:: "TeX:UTF-8"
+
+\chapter{基于Feign的声明式服务调用}
+
+\section{设计原理}
+
+Feign是Netflix开发的声明式HTTP客户端，通过"接口 + 注解"的编程模型大幅简化了服务间调用代码。其核心优势包括：
+
+\begin{itemize}
+	\item \textbf{声明式编程模型}：只需定义Java接口并标注注解，Feign自动生成代理实现类
+	\item \textbf{内置负载均衡}：集成Spring Cloud LoadBalancer，自动实现客户端负载均衡
+	\item \textbf{集成熔断降级}：通过\verb|fallback|属性指定降级实现类
+	\item \textbf{契约驱动}：Feign接口定义本身就是服务调用契约
+\end{itemize}
+
+\section{Feign客户端定义}
+
+项目中共定义了9个Feign客户端，涵盖所有跨服务调用场景：
+
+\begin{table}[H]
+	\centering
+	\caption{Feign客户端总览}
+	\begin{tabular}{p{3.5cm}p{3.0cm}p{4.0cm}}
+		\hline
+		\textbf{客户端} & \textbf{所在服务} & \textbf{目标服务与用途} \\
+		\hline
+		BusinessClient & food-server & business-server：验证商家存在 \\
+		FoodFeignClient & cart-server & food-server：获取食品信息 \\
+		OrderFeignClient & cart-server & business-server：创建订单 \\
+		BusinessClient & order-server & business-server：获取商家信息 \\
+		CartClient & order-server & cart-server：购物车操作 \\
+		PointClient & order-server & point-server：积分操作 \\
+		VirtualWalletClient & order-server & wallet-server：余额、转账 \\
+		UserClient & wallet-server & user-server：验证用户存在 \\
+		OrderClient & point-server & order-server：关联订单积分 \\
+		\hline
+	\end{tabular}
+\end{table}
+
+以下以订单服务调用钱包服务为例：
+
+\begin{lstlisting}[language=Java, caption=VirtualWalletClient.java]
+@FeignClient(name = "elm-wallet-server")
+public interface VirtualWalletClient {
+    @GetMapping("/wallet/getBalance")
+    CommonResult<BigDecimal> getBalanceByUserId(
+        @RequestParam("userId") String userId);
+
+    @PostMapping("/wallet/transfer")
+    CommonResult<Integer> transfer(
+        @RequestParam("fromUserId") String fromUserId,
+        @RequestParam("toUserId") String toUserId,
+        @RequestParam("amount") BigDecimal amount);
+}
+\end{lstlisting}
+
+\section{Feign集成Fallback降级}
+
+当目标服务不可用时，Feign通过\verb|fallback|属性调用降级实现类，返回兜底数据：
+
+\begin{lstlisting}[language=Java, caption=Feign Fallback降级]
+@FeignClient(name = "elm-business-server",
+             fallback = BusinessClientFallback.class)
+public interface BusinessClient {
+    @GetMapping("/businesses/{businessId}")
+    String getBusinessById(@PathVariable("businessId") Integer businessId);
+}
+
+@Component
+public class BusinessClientFallback implements BusinessClient {
+    @Override
+    public String getBusinessById(Integer businessId) {
+        return "{\"code\":200, " +
+               "\"message\":\"Fallback: Business service unavailable\"}";
+    }
+}
+\end{lstlisting}
+
+食品服务调用商家服务验证商家是否存在时，若商家服务不可用，Fallback返回模拟的成功响应，使食品服务仍能正常运行（宽松策略，假设商家存在）。这种设计体现了微服务架构中"优雅降级"的思想。
+
+\section{组合调用示例}
+
+订单服务创建订单时，组合使用多个Feign客户端：
+
+\begin{lstlisting}[language=Java, caption=订单创建中的Feign组合调用]
+@Transactional
+public int createOrders(Orders orders) {
+    // 1. Feign获取购物车
+    CommonResult<?> cartResult =
+        cartClient.listCart(orders.getUserId(), orders.getBusinessId());
+    // 2. 创建订单主记录与明细
+    ordersMapper.saveOrders(orders);
+    orderDetailetMapper.saveOrderDetailetBatch(list);
+    // 3. Feign清空购物车
+    cartClient.removeCart(orders.getUserId(), orders.getBusinessId());
+    return orderId;
+}
+\end{lstlisting}
+
+整个过程是声明式的——开发者只需关注业务逻辑，HTTP通信的细节完全由Feign处理。

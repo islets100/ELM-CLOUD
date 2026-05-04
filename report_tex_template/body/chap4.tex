@@ -1,0 +1,66 @@
+% !Mode:: "TeX:UTF-8"
+
+\chapter{基于HTTP的客户端负载均衡}
+
+\section{设计原理}
+
+在微服务架构中，同一服务通常部署多个实例以提高可用性和吞吐量。负载均衡机制负责将请求合理分配到各个服务实例上。客户端负载均衡将负载均衡逻辑集成在服务调用方，调用方从服务注册中心获取目标服务的所有实例列表，然后根据均衡策略自主选择一个实例发起调用。
+
+在Spring Cloud生态中，Netflix Ribbon是经典的客户端负载均衡组件。但在Spring Cloud 2020.0.2版本中，Ribbon已进入维护模式，官方推荐使用Spring Cloud LoadBalancer作为替代方案。两者的核心设计思想一致：在客户端实现负载均衡策略，避免引入额外的网络跳转。
+
+\section{Spring Cloud LoadBalancer实现}
+
+\subsection{Gateway中的负载均衡}
+
+Gateway的所有路由规则中，目标URI均使用\verb|lb://|前缀：
+
+\begin{lstlisting}[language=Java, caption=Gateway路由中的负载均衡]
+routes:
+  - id: userServer
+    uri: lb://elm-user-server    # lb:// 前缀启用负载均衡
+    predicates:
+      - Path=/users/**
+\end{lstlisting}
+
+当Gateway收到匹配的请求时，会通过负载均衡器从Eureka注册表中获取对应服务的所有健康实例列表，然后根据轮询策略选择一个实例转发请求。
+
+\subsection{Feign中的负载均衡}
+
+所有Feign客户端定义的\verb|@FeignClient(name = "elm-business-server")|中的\verb|name|属性即对应Eureka中的服务名。Feign内部集成了Spring Cloud LoadBalancer，在发起HTTP调用时自动实现负载均衡：
+
+\begin{lstlisting}[language=Java, caption=Feign集成LoadBalancer]
+@FeignClient(name = "elm-business-server")
+public interface BusinessClient {
+    @GetMapping("/businesses/{businessId}")
+    String getBusinessById(@PathVariable("businessId") Integer businessId);
+}
+\end{lstlisting}
+
+当调用\verb|BusinessClient.getBusinessById(1)|时，Feign自动从Eureka本地缓存中查找\verb|elm-business-server|的所有实例，通过LoadBalancer选择一个健康实例并发起HTTP请求，整个过程对开发者完全透明。
+
+\subsection{Eager Load配置}
+
+为避免首次请求的冷启动延迟，Gateway配置了急切加载：
+
+\begin{lstlisting}[language=Java, caption=Eager Load配置]
+spring:
+  cloud:
+    gateway:
+      loadbalancer:
+        eager-load:
+          clients:
+            - elm-user-server
+            - elm-business-server
+            - elm-food-server
+            - elm-cart-server
+            - elm-delivery-server
+            - elm-order-server
+            - elm-point-server
+            - elm-wallet-server
+\end{lstlisting}
+
+Eager Load使Gateway在启动时即预加载所有目标服务的实例列表，消除首次请求的延迟。
+
+\section{Ribbon到Spring Cloud LoadBalancer的演进}
+
+Spring Cloud 2020.0.2中Ribbon已被Spring Cloud LoadBalancer取代，原因包括：Ribbon自2018年起进入维护模式；Spring Cloud LoadBalancer是Spring官方维护方案，与Spring Cloud Gateway的非阻塞架构天然匹配；虽然底层组件变化，但客户端负载均衡的核心思想保持不变。

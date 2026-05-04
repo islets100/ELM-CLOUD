@@ -58,7 +58,7 @@
             </div>
 
             <div class="order-foods">
-              <div v-for="detail in order.orderDetails" :key="detail.odId || `${order.id}-${detail.foodId}`" class="food-row">
+              <div v-for="detail in order.orderDetails" :key="detail.id || `${order.id}-${detail.foodId}`" class="food-row">
                 <span>{{ detail.foodName }}</span>
                 <span>x{{ detail.quantity }}</span>
               </div>

@@ -1,8 +1,20 @@
 <template>
 	<div id="app">
 		<router-view />
-		</div>
+		<GlobalFallbackRetryPrompt />
+	</div>
 </template>
+
+<script>
+import GlobalFallbackRetryPrompt from './components/GlobalFallbackRetryPrompt.vue'
+
+export default {
+	name: 'App',
+	components: {
+		GlobalFallbackRetryPrompt
+	}
+}
+</script>
 
 <!--这里是共通样式，适用于所有组件，所以不要加scoped-->
 <style>

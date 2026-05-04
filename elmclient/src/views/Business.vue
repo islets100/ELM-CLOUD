@@ -302,7 +302,7 @@ export default {
           businessAddress: this.businessForm.businessAddress,
           businessExplain: this.businessForm.businessExplain,
           orderTypeId: this.businessForm.orderTypeId,
-          starPrice: Number(this.businessForm.startPrice || 0),
+          startPrice: Number(this.businessForm.startPrice || 0),
           deliveryPrice: Number(this.businessForm.deliveryPrice || 0),
           remarks: this.businessForm.remarks,
           userId

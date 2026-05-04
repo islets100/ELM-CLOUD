@@ -182,7 +182,15 @@
 				try {
 					const response = await walletApi.getWallet()
 					if (response.data.success) {
-						this.wallet = response.data.data
+												const raw = response.data.data || {}
+							this.wallet = {
+								balance: raw.balance || 0,
+								availableBalance: raw.balance || 0,
+								frozenAmount: 0,
+								creditLimit: raw.creditLimit || 0,
+								overdraftAmount: raw.usedCreditLimit || 0,
+								hasVipPrivilege: (raw.creditLimit || 0) > 0
+							}
 					} else {
 						alert('获取钱包信息失败: ' + response.data.message)
 					}

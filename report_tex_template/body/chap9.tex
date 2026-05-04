@@ -1,0 +1,76 @@
+% !Mode:: "TeX:UTF-8"
+
+\chapter{业务流程设计}
+
+\section{用户注册与登录流程}
+
+\begin{enumerate}
+	\item 前端提交用户名、密码、性别等注册信息
+	\item elm-user-server使用BCrypt加密密码后写入MySQL user表
+	\item 登录时前端提交用户名、密码
+	\item elm-user-server查询user表验证用户，支持BCrypt和明文两阶段兼容
+	\item 验证通过后生成JWT Token（HMAC-SHA512签名），包含userId和authorities
+	\item 返回Token给前端，前端存储到localStorage，后续请求在Header中携带\verb|Authorization: Bearer {token}|
+\end{enumerate}
+
+\section{点餐与下单流程}
+
+\begin{enumerate}
+	\item 浏览商家：\verb|GET /api/businesses → elm-business-server|，网关缓存过滤器介入
+	\item 浏览食品：\verb|GET /api/foods?businessId={id} → elm-food-server|，Feign调用business-server验证商家存在
+	\item 加入购物车：\verb|POST /api/carts → elm-cart-server|，Feign调用food-server验证食品存在
+	\item 创建订单：\verb|POST /api/orders → elm-order-server|
+	\begin{enumerate}
+		\item Feign获取购物车内容（CartClient → cart-server）
+		\item 创建Orders主记录（写入orders表）
+		\item 批量创建订单明细（写入orderDetailet表）
+		\item Feign清空购物车（CartClient → cart-server）
+		\item 全程在\verb|@Transactional|事务保护下
+	\end{enumerate}
+\end{enumerate}
+
+\section{支付流程（虚拟钱包+积分）}
+
+\verb|POST /api/orders/{orderId}/pay/virtual-wallet → elm-order-server|
+
+\begin{enumerate}
+	\item 获取分布式锁 Redisson（key="order-{orderId}"，超时=10s）
+	\item 检查订单状态，已支付则直接返回
+	\item Feign获取商家userId（BusinessClient → business-server）
+	\item Feign查询用户钱包余额（VirtualWalletClient → wallet-server）
+	\item Feign查询用户积分余额（PointClient → point-server）
+	\item 余额不足返回1，积分不足返回2
+	\item Feign计算积分抵扣金额（PointClient → point-server）
+	\item 实际支付金额 = 订单总额 - 积分抵扣金额
+	\item Feign转账 fromUserId → businessUserId（VirtualWalletClient → wallet-server）
+	\item 转账成功后：发放消费积分、更新订单状态为已支付、扣除使用积分
+	\item 释放分布式锁，返回支付结果
+\end{enumerate}
+
+\section{订单状态异步通知流程}
+
+商家服务在订单状态变更时通过RabbitMQ发出消息：
+
+\begin{itemize}
+	\item 商家服务（RabbitMQSender）发送消息到\verb|order.exchange|，routingKey为\verb|order.status.change|
+	\item 购物车服务（RabbitMQListener）从\verb|order.status.queue|接收消息，处理订单状态变更的业务逻辑
+	\item 采用DirectExchange + 明确路由键，确保消息精确投递
+\end{itemize}
+
+\section{积分签到流程}
+
+\begin{enumerate}
+	\item 查询用户今日是否已签到（sign\_in\_records表）
+	\item 查询昨日签到记录，计算连续签到天数
+	\item 连续天数越多，奖励积分越多
+	\item 创建签到记录，写入积分记录（类型为CHECK\_IN，状态为AVAILABLE）
+	\item 返回连续签到天数和获得积分
+\end{enumerate}
+
+\section{积分定时任务}
+
+\begin{itemize}
+	\item 每日凌晨1点：将过期的AVAILABLE积分状态改为EXPIRED
+	\item 每日凌晨2点：检查当日是否为用户生日，自动发放生日积分
+	\item 通过\verb|@Scheduled|注解配合cron表达式实现
+\end{itemize}

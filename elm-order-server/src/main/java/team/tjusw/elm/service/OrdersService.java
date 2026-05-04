@@ -16,4 +16,6 @@ public interface OrdersService {
 	public Orders updateOrderState(Integer orderId, Integer orderState);
 
 	public Integer payByVirtualWallet(String userId, Integer orderId, int pointAmount);
+
+	public Orders confirmReceipt(Integer orderId);
 }

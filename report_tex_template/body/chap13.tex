@@ -1,0 +1,77 @@
+% !Mode:: "TeX:UTF-8"
+
+\chapter{总结}
+
+\section{技术栈总结}
+
+本项目实现了一个基于Spring Cloud微服务架构的外卖点餐平台，完整覆盖了从用户注册、商家浏览、点餐下单到钱包支付、积分管理的全业务流程。项目在以下方面体现了微服务架构的核心能力：
+
+\begin{enumerate}
+	\item \textbf{服务治理}：通过Eureka实现服务注册发现，支持Peer-to-Peer集群高可用，心跳续约间隔5秒，租约过期15秒
+	\item \textbf{负载均衡}：通过Spring Cloud LoadBalancer实现客户端负载均衡，Gateway路由使用lb://前缀，Feign内置负载均衡，Eager Load消除冷启动延迟
+	\item \textbf{声明式调用}：通过9个Feign客户端简化微服务间通信，集成Fallback降级逻辑，严格遵循单向无循环依赖
+	\item \textbf{容错降级}：通过Resilience4j在Gateway层为9个服务配置独立熔断器（20秒超时），FallbackController返回包含fallback/retryable/service元数据的降级响应；Feign层集成Fallback实现兜底数据返回
+	\item \textbf{API网关}：通过Spring Cloud Gateway实现统一入口，15条路由规则覆盖所有微服务，自定义缓存过滤器将重复GET请求从秒级降至毫秒级
+	\item \textbf{配置管理}：通过Spring Cloud Config（native模式）实现集中配置，参数化配置支持环境变量覆盖；通过Spring Cloud Bus + RabbitMQ实现配置动态刷新
+	\item \textbf{数据一致性}：通过Redisson分布式锁（锁超时10秒）保障金钱交易的一致性；通过Spring @Transactional保障订单创建与购物车清空的原子性
+	\item \textbf{异步解耦}：通过RabbitMQ（DirectExchange + 明确路由键）实现订单状态异步通知，降低商家服务与购物车服务之间的耦合
+\end{enumerate}
+
+\section{通信方式对比}
+
+\begin{table}[H]
+	\centering
+	\caption{服务间通信方式对比}
+	\begin{tabular}{p{4.0cm}p{5.0cm}p{5.0cm}}
+		\hline
+		\textbf{对比维度} & \textbf{Feign同步调用} & \textbf{RabbitMQ异步消息} \\
+		\hline
+		应用场景 & 订单创建、支付（需即时响应） & 订单状态变更通知 \\
+		耦合度 & 调用方依赖被调用方接口 & 生产者和消费者完全解耦 \\
+		可靠性 & 调用失败即失败（有Fallback） & 消息持久化，支持重试 \\
+		实时性 & 同步等待响应 & 异步处理，延迟低 \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\section{容错机制分层}
+
+Gateway层熔断（Resilience4j，Timeout=20s）保障外部请求的可用性，返回包含fallback元数据的降级响应（HTTP 403）；Feign层降级（Fallback实现类）保障内部服务间调用的鲁棒性，返回模拟的兜底数据。两层容错互为补充，形成纵深防御体系。
+
+\section{RESTful API设计原则}
+
+本项目严格遵循RESTful规范：将数据库表项映射为"资源"，URL表示资源路径；使用HTTP方法语义（GET/POST/PUT/DELETE）；资源路径使用复数名词；通过路径参数表达资源层级；统一使用CommonResult(code, message, result)响应格式。团队编写了《RESTful API接口规格说明书》，前后端基于文档并行开发。
+
+\section{业务对象设计优化}
+
+金额类型全部使用BigDecimal，避免浮点数精度问题；对象关联通过主键引用（Order存储businessId而非Business对象），将订单响应大小从MB级降至KB级，显著降低了微服务耦合度。
+
+\section{测试设计总结}
+
+项目编写了19个测试类共131个测试用例，覆盖全部8个微服务模块。测试采用四层金字塔架构：Mapper层（真实数据库+事务回滚）、Service层（Mockito单元测试）、Controller层（MockMvc独立模式）、边界条件层（空值/零值/重复操作/数据隔离）。点餐订单支付链路为测试重点，通过MockBean模拟完整Feign调用链验证交易完整性、余额不足拒绝和重复支付幂等性。
+
+\section{小组成员分工}
+
+\begin{table}[H]
+	\centering
+	\caption{小组成员分工}
+	\begin{tabular}{p{2.8cm}p{11.5cm}}
+		\hline
+		\textbf{成员} & \textbf{负责内容} \\
+		\hline
+		杨博 & 测试设计与实现、point积分微服务开发、熔断降级前后端调试、前后端联调 \\
+		\hline
+		任晓华 & food食品微服务开发、wallet钱包微服务开发、对应功能模块测试 \\
+		\hline
+		陈宇泽 & delivery配送地址微服务开发、order订单微服务开发、对应功能模块测试 \\
+		\hline
+		魏语菲 & cart购物车微服务开发、business商家微服务开发、对应功能模块测试 \\
+		\hline
+		牛文航 & 数据库设计与搭建、user用户微服务开发、前后端联调 \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\section{项目展望}
+
+项目在功能覆盖上完成了核心业务闭环与扩展能力展示，后续可在以下方向改进：完善密码哈希与密钥管理等安全基线；引入自动化接口测试与端到端回归用例；扩充网关缓存淘汰机制（如LRU）；引入更完善的监控与告警体系；持续提高测试覆盖率，特别是Service层单元测试的覆盖广度。

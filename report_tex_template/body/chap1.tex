@@ -1,0 +1,147 @@
+% !Mode:: "TeX:UTF-8"
+
+\chapter{需求分析}
+
+\section{项目背景}
+
+本项目是"饿了么"外卖点餐平台的微服务化实现，基于Spring Cloud + Vue前后端分离架构。系统围绕外卖点餐的核心业务流程，涵盖用户注册登录、商家浏览、食品选择、购物车管理、订单创建与支付、虚拟钱包、积分系统等功能模块。
+
+本项目开发了一个完整的外卖点餐平台"点餐业务线"整体流程。项目要求采用微服务架构，使用Spring Cloud技术栈实现服务治理、通信、容错等核心机制。
+
+\section{功能性需求分析}
+
+根据项目任务书及业务分析，系统需支持以下功能模块。
+
+\subsection{用户服务模块}
+
+\begin{itemize}
+	\item 用户注册：支持用户名、密码、性别等基本信息的注册，密码使用BCrypt加密存储
+	\item 用户登录：基于JWT（JSON Web Token）的身份认证机制，支持"记住我"延长令牌有效期
+	\item 用户信息管理：查看个人信息、修改密码、更新用户资料
+	\item 生日设置：用于生日积分奖励的判断依据
+	\item 用户查询：支持按ID查询、按用户名查询、检查用户是否存在
+\end{itemize}
+
+\subsection{商家服务模块}
+
+\begin{itemize}
+	\item 商家列表查询：按分类展示所有商家信息
+	\item 商家详情查询：获取特定商家的完整信息，包括名称、地址、起送价、配送费等
+	\item 商家注册与管理：支持商家入驻注册和管理自己的店铺
+	\item 订单类型管理：按商家分类管理订单类型
+\end{itemize}
+
+\subsection{食品服务模块}
+
+\begin{itemize}
+	\item 食品CRUD操作：食品的创建、查询、更新、删除（逻辑删除，设置valid=0）
+	\item 按商家查询食品：获取特定商家下的所有在售食品
+	\item 商家关联验证：通过Feign调用商家微服务，验证食品所属商家是否存在
+\end{itemize}
+
+\subsection{购物车服务模块}
+
+\begin{itemize}
+	\item 购物车添加：将食品加入购物车，若已存在则更新数量
+	\item 购物车管理：查询、更新数量、删除购物车项
+	\item 多维度查询：支持按用户ID和按商家ID两个维度查询购物车内容
+	\item 订单创建联动：下单成功后自动清空对应的购物车项
+\end{itemize}
+
+\subsection{订单服务模块}
+
+\begin{itemize}
+	\item 订单创建：从购物车批量创建订单，包含订单明细（订单主体\&订单详单）
+	\item 订单查询：支持按用户ID、按商家ID、按订单ID多维度查询
+	\item 订单状态流转：待支付(0)→已支付(1)→配送中(2)→已完成(3)
+	\item 虚拟钱包支付：通过虚拟钱包余额+积分抵扣组合支付
+	\item 分布式锁保障：支付环节使用Redisson分布式锁，确保金钱交易一致性
+\end{itemize}
+
+\subsection{配送地址服务模块}
+
+\begin{itemize}
+	\item 配送地址CRUD：新增、修改、删除配送地址
+	\item 按用户查询：获取某用户的所有有效配送地址
+	\item 逻辑删除：删除操作不物理删除数据，仅设置valid=0
+\end{itemize}
+
+\subsection{虚拟钱包服务模块}
+
+\begin{itemize}
+	\item 钱包自动创建：用户注册后自动创建虚拟钱包
+	\item 核心操作：余额查询、充值、支付、转账
+	\item 透支管理：支持信用额度透支与还款
+	\item 交易明细记录：记录所有交易的金额、类型、时间、对方钱包
+\end{itemize}
+
+\subsection{VIP卡服务模块}
+
+\begin{itemize}
+	\item VIP卡购买：提供99元和299元两档VIP卡
+	\item 信用额度：VIP用户获得2000元信用额度
+	\item VIP卡状态管理：记录购买时间、到期时间、状态
+\end{itemize}
+
+\subsection{积分服务模块}
+
+\begin{itemize}
+	\item 积分多渠道获取：签到奖励、消费返积分、活动赠送、生日奖励、红包雨
+	\item 积分消费：订单抵扣、积分兑换
+	\item 积分统计：按可用/已用/已过期维度进行统计分析
+	\item 定时任务：每日凌晨自动处理积分过期，每日凌晨发放生日积分
+	\item 红包雨活动：支持红包雨促销活动的配置与管理
+\end{itemize}
+
+\section{非功能性需求}
+
+\subsection{性能需求}
+
+\begin{itemize}
+	\item 网关层引入响应缓存机制：对商家和食品等低频变更数据的GET请求进行缓存，减少重复的微服务调用，将响应时间从秒级缩短至毫秒级
+	\item 数据库连接池复用：减少连接创建与销毁的开销
+	\item 使用消息队列实现异步通信：提升系统吞吐量，降低同步调用链路的延迟
+\end{itemize}
+
+\subsection{安全需求}
+
+\begin{itemize}
+	\item JWT令牌认证：所有API请求需携带有效Token，令牌使用HMAC-SHA512算法签名
+	\item BCrypt密码加密存储：用户密码不以明文形式存储
+	\item 网关统一入口：隐藏内部微服务拓扑，对外部仅暴露网关端口
+	\item 前后端分离：前端通过网关代理访问后端，避免直接暴露微服务地址
+\end{itemize}
+
+\subsection{可用性需求}
+
+\begin{itemize}
+	\item 服务注册与发现机制：支持服务实例动态上下线，无需手动配置
+	\item 网关层熔断降级：保证每个请求都能获得响应，即使后端服务故障也不返回白屏
+	\item Feign客户端集成降级回退逻辑：微服务间调用失败时有兜底处理
+	\item 高可用集群设计：Eureka Server集群部署，避免单点故障
+\end{itemize}
+
+\subsection{可维护性}
+
+\begin{itemize}
+	\item 集中配置管理：所有微服务的配置文件统一托管在Config Server
+	\item 基于Spring Cloud Bus的配置动态刷新：修改配置无需重启服务
+	\item RESTful API规范化设计：前后端通过《接口规格说明书》解耦并行开发
+	\item 代码模块化：每个微服务独立管理，职责清晰
+\end{itemize}
+
+\subsection{可扩展性}
+
+\begin{itemize}
+	\item 微服务独立部署与独立扩展：可根据业务压力针对性地对特定服务进行横向扩展
+	\item 服务间通过Feign声明式调用：无硬编码URL，服务位置透明
+	\item 数据库按业务域垂直拆分：每个微服务使用独立的数据库，避免数据耦合
+\end{itemize}
+
+\subsection{数据一致性}
+
+\begin{itemize}
+	\item 涉及金钱的业务（钱包充值/支付/转账、订单支付、积分扣减）使用Redisson分布式锁保障严格一致性
+	\item 订单支付流程使用Spring事务保护，确保订单创建与购物车清空的原子性
+	\item 非金融类业务（如订单状态通知）采用RabbitMQ消息队列实现最终一致性
+\end{itemize}

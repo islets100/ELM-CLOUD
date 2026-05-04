@@ -134,7 +134,7 @@ export default {
 		},
 
 		async toPayment() {
-			if (!this.deliveryaddress?.id) {
+			if (!this.deliveryaddress?.daId) {
 				alert('请选择送货地址')
 				return
 			}
@@ -150,7 +150,7 @@ export default {
 				const response = await this.$axios.post('/api/orders', {
 					userId: this.user.id,
 					businessId: this.businessId,
-					daId: this.deliveryaddress.id,
+					daId: this.deliveryaddress.daId,
 					orderTotal: this.totalPrice
 				}, {
 					headers: {

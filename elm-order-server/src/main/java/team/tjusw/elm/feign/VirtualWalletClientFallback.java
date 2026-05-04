@@ -18,4 +18,14 @@ public class VirtualWalletClientFallback implements VirtualWalletClient {
 		return new CommonResult<>(505,"订单微服务请求虚拟钱包微服务时发生了错误，因此触发了熔断降级措施.",null);
 	}
 
+	@Override
+	public CommonResult<Integer> freezeFunds(Integer orderId, String userId, String businessUserId, BigDecimal amount) {
+		return new CommonResult<>(505,"订单微服务请求虚拟钱包微服务时发生了错误，因此触发了熔断降级措施.",null);
+	}
+
+	@Override
+	public CommonResult<Integer> releaseFrozenFunds(Integer orderId) {
+		return new CommonResult<>(505,"订单微服务请求虚拟钱包微服务时发生了错误，因此触发了熔断降级措施.",null);
+	}
+
 }

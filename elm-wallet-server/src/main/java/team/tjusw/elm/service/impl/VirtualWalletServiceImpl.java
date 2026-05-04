@@ -10,7 +10,9 @@ import team.tjusw.elm.po.VirtualWalletPO;
 import team.tjusw.elm.po.OverdraftRecordPO;
 import team.tjusw.elm.mapper.VirtualWalletMapper;
 import team.tjusw.elm.mapper.OverdraftRecordMapper;
+import team.tjusw.elm.mapper.FrozenFundsMapper;
 import team.tjusw.elm.feign.UserClient;
+import team.tjusw.elm.po.FrozenFundsPO;
 
 @Service
 public class VirtualWalletServiceImpl implements VirtualWalletService {
@@ -19,6 +21,8 @@ public class VirtualWalletServiceImpl implements VirtualWalletService {
     private VirtualWalletMapper virtualWalletMapper;
     @Autowired
     private OverdraftRecordMapper overdraftRecordMapper;
+    @Autowired
+    private FrozenFundsMapper frozenFundsMapper;
     @Autowired
     private UserClient userClient;
 
@@ -105,6 +109,43 @@ public class VirtualWalletServiceImpl implements VirtualWalletService {
         }
         if (!recharge(toUserId, amount)) {
             throw new RuntimeException("Transfer failed");
+        }
+        return 1;
+    }
+
+    @Override
+    @Transactional
+    public int freezeFunds(Integer orderId, String userId, String businessUserId, BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            return 0;
+        }
+        if (!pay(userId, amount)) {
+            return 0;
+        }
+        FrozenFundsPO frozen = new FrozenFundsPO();
+        frozen.setOrderId(orderId);
+        frozen.setUserId(userId);
+        frozen.setBusinessUserId(businessUserId);
+        frozen.setAmount(amount);
+        frozen.setStatus(0);
+        frozen.setCreateTime(String.valueOf(System.currentTimeMillis()));
+        frozenFundsMapper.insert(frozen);
+        return 1;
+    }
+
+    @Override
+    @Transactional
+    public int releaseFrozenFunds(Integer orderId) {
+        FrozenFundsPO frozen = frozenFundsMapper.selectByOrderId(orderId);
+        if (frozen == null) {
+            return 0;
+        }
+        if (frozen.getStatus() == 1) {
+            return 2;
+        }
+        frozenFundsMapper.updateStatus(orderId, 1);
+        if (!recharge(frozen.getBusinessUserId(), frozen.getAmount())) {
+            throw new RuntimeException("Failed to release frozen funds to business");
         }
         return 1;
     }

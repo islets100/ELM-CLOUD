@@ -66,21 +66,30 @@ public class UserServiceImpl implements UserService {
 	public User getUser(String userId) {
 		User user = userMapper.getUserById(userId);
 		if (user != null) {
-			// Set authority based on userId
-			Authority authority;
-			if ("admin".equals(userId)) {
-				authority = new Authority("ADMIN");
-			} else {
-				authority = new Authority("USER");
-			}
-			user.setAuthorities(Arrays.asList(authority));
+			user.setAuthorities(buildAuthorities(user));
 		}
 		return user;
 	}
 
+	private List<Authority> buildAuthorities(User user) {
+		Authority authority;
+		if ("admin".equals(user.getUserId())) {
+			authority = new Authority("ADMIN");
+		} else if (user.getUserType() != null && user.getUserType() == 1) {
+			authority = new Authority("BUSINESS");
+		} else {
+			authority = new Authority("USER");
+		}
+		return Arrays.asList(authority);
+	}
+
 	@Override
 	public List<User> listUsers() {
-		return userMapper.listUsers();
+		List<User> users = userMapper.listUsers();
+		for (User user : users) {
+			user.setAuthorities(buildAuthorities(user));
+		}
+		return users;
 	}
 
 	@Override

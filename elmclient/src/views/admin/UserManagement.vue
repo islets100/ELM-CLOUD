@@ -227,10 +227,10 @@
 				try {
 					// 2. 先查用户名是否存在（调用后端新增接口userExistsByUsername）
 					const existRes = await adminApi.userExistsByUsername(username)
-					if (existRes.data === 1) {
+					if (existRes.data && existRes.data.data === 1) {
 						// 3. 查用户名对应的详情（调用后端新增接口getUserByUsername）
 						const detailRes = await adminApi.getUserByUsername(username)
-						this.userDetail = detailRes.data
+						this.userDetail = detailRes.data ? detailRes.data.data : null
 						this.users = [] // 清空列表，专注显示单个用户
 					} else {
 						this.userDetail = null
@@ -250,7 +250,7 @@
 				try {
 					// 调用获取所有用户的接口 /api/users
 					const response = await adminApi.getAllUsers()
-					this.users = response.data || []
+					this.users = response.data ? (response.data.data || []) : []
 					this.filterUsers() // 应用角色过滤
 					this.userDetail = null // 清空单个用户详情
 					this.searchUsername = '' // 修改点6 - 清空用户名输入框（原清空searchUserId）

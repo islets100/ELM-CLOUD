@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   `userSex` TINYINT DEFAULT NULL,
   `userImg` VARCHAR(255) DEFAULT NULL,
   `delTag` TINYINT NOT NULL DEFAULT 1,
+  `userType` TINYINT NOT NULL DEFAULT 0,
   PRIMARY KEY (`userId`),
   KEY `idx_user_userName` (`userName`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -115,7 +116,7 @@ CREATE TABLE IF NOT EXISTS `VirtualWalletDetails` (
 
 CREATE TABLE IF NOT EXISTS `integral` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` BIGINT NOT NULL,
+  `user_id` VARCHAR(50) NOT NULL,
   `amount` INT NOT NULL,
   `type` VARCHAR(20) NOT NULL,
   `status` VARCHAR(20) NOT NULL,
@@ -132,7 +133,7 @@ CREATE TABLE IF NOT EXISTS `integral` (
 
 CREATE TABLE IF NOT EXISTS `sign_in_records` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` BIGINT NOT NULL,
+  `user_id` VARCHAR(50) NOT NULL,
   `sign_date` DATE NOT NULL,
   `consecutive_days` INT NOT NULL DEFAULT 1,
   `points_awarded` INT NOT NULL,
@@ -144,7 +145,7 @@ CREATE TABLE IF NOT EXISTS `sign_in_records` (
 
 CREATE TABLE IF NOT EXISTS `birthday_integral_records` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` BIGINT NOT NULL,
+  `user_id` VARCHAR(50) NOT NULL,
   `record_date` DATE NOT NULL,
   `monthly_earned` BOOLEAN NOT NULL DEFAULT FALSE,
   `birthday_earned` BOOLEAN NOT NULL DEFAULT FALSE,

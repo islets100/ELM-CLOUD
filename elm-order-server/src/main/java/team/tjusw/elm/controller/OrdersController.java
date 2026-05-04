@@ -56,7 +56,7 @@ public class OrdersController {
 	@PutMapping("/{orderId}/state")
 	public CommonResult<Orders> updateOrderState(@PathVariable("orderId") Integer orderId,
 			@RequestParam("orderState") Integer orderState) throws Exception {
-		if (orderState == null || orderState < 0 || orderState > 3) {
+		if (orderState == null || orderState < 0 || orderState > 4) {
 			return new CommonResult<Orders>(400, "invalid orderState", null);
 		}
 		Orders ret = ordersService.updateOrderState(orderId, orderState);
@@ -84,5 +84,14 @@ public class OrdersController {
 			return new CommonResult<Integer>(200, "ok", ret);
 		}
 		return new CommonResult<Integer>(505, "payment failed", ret);
+	}
+
+	@PutMapping("/{orderId}/confirm-receipt")
+	public CommonResult<Orders> confirmReceipt(@PathVariable("orderId") Integer orderId) throws Exception {
+		Orders ret = ordersService.confirmReceipt(orderId);
+		if (ret == null) {
+			return new CommonResult<Orders>(400, "confirm receipt failed", null);
+		}
+		return new CommonResult<Orders>(200, "confirmed", ret);
 	}
 }
