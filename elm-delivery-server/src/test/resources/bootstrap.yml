@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: elm-delivery-server-test
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+
+server:
+  port: 0
+
+eureka:
+  client:
+    enabled: false

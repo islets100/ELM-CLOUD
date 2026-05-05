@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -55,7 +56,7 @@ public class DeliveryAddressController {
 	
 
 	@PostMapping
-	public CommonResult<Integer> saveDeliveryAddress(DeliveryAddress deliveryAddress) throws Exception {
+	public CommonResult<Integer> saveDeliveryAddress(@RequestBody DeliveryAddress deliveryAddress) throws Exception {
 		
 		int ret = deliveryAddressService.saveDeliveryAddress(deliveryAddress);
 		if(ret==0)
@@ -66,7 +67,7 @@ public class DeliveryAddressController {
 
 	
 	@PutMapping("/{daId}")
-	public CommonResult<Integer> updateDeliveryAddress(@PathVariable("daId") Integer daId,DeliveryAddress deliveryAddress) throws Exception {
+	public CommonResult<Integer> updateDeliveryAddress(@PathVariable("daId") Integer daId, @RequestBody DeliveryAddress deliveryAddress) throws Exception {
 		deliveryAddress.setDaId(daId);
 		int ret = deliveryAddressService.updateDeliveryAddress(deliveryAddress);
 		if(ret==0)

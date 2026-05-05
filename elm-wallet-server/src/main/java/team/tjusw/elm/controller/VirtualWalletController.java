@@ -1,89 +1,132 @@
 package team.tjusw.elm.controller;
 
-import java.math.BigDecimal;
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import team.tjusw.elm.service.VirtualWalletService;
-import team.tjusw.elm.controller.vo.VirtualWalletDetailsVo;
 import team.tjusw.elm.po.CommonResult;
+import team.tjusw.elm.po.VirtualWalletPO;
+import javax.servlet.http.HttpServletRequest;
 
-//@CrossOrigin("*")
 @RestController
-@RequestMapping("/virtual-wallets")
+@RequestMapping("/wallet")
 public class VirtualWalletController {
-	@Autowired
-	private VirtualWalletService virtualWalletService;
 
-	@GetMapping("/user/{userId}/balance")
-	public CommonResult<BigDecimal> getBalanceByUserId(@PathVariable("userId") String userId) {
-		BigDecimal ret = virtualWalletService.getBalanceByUserId(userId);
-		if(ret==null)
-			return new CommonResult<BigDecimal>(505,"虚拟钱包服务发生未知错误.",ret);
-		else 
-			return new CommonResult<BigDecimal>(200,"成功获取用户虚拟钱包余额.",ret);
-			
-	}
+    @Autowired
+    private VirtualWalletService walletService;
 
-	@GetMapping("/user/{userId}/details")
-	public CommonResult<List<VirtualWalletDetailsVo>> getDetailsByUserId(@PathVariable("userId") String userId) {
-		List<VirtualWalletDetailsVo> ret = virtualWalletService.getDetailsByUserId(userId);
-		if(ret==null)
-			return new CommonResult<List<VirtualWalletDetailsVo>>(505,"虚拟钱包服务发生未知错误.",ret);
-		else 
-			return new CommonResult<List<VirtualWalletDetailsVo>>(200,"成功获取用户虚拟钱包交易记录.",ret);
-		
-	}
+    // 根据Token获取当前用户的钱包信息（适配前端）
+    @GetMapping
+    public CommonResult<VirtualWalletPO> getCurrentWallet(HttpServletRequest request) {
+        try {
+            // 从请求头获取token并解析userId
+            String authorization = request.getHeader("Authorization");
+            if (authorization == null || !authorization.startsWith("Bearer ")) {
+                return new CommonResult<>(401, "Missing or invalid token", null);
+            }
 
-	
-	@PostMapping("/user/{userId}/credit")
-	public CommonResult<Integer> credit(@PathVariable("userId") String userId, BigDecimal amount) {
-	    try {
-	        int ret = virtualWalletService.credit(userId, amount);
-	        if (ret == 0)
-	            return new CommonResult<Integer>(422, "充值失败.", ret);
-	        else
-	            return new CommonResult<Integer>(200, "充值成功.", ret);
-	    } catch (Exception e) {
-	        return new CommonResult<Integer>(500, "充值过程中出现异常: " + e.getMessage(), null);
-	    }
-	}
+            String token = authorization.substring(7);
+            String userId = getUserIdFromToken(token);
+            if (userId == null) {
+                return new CommonResult<>(401, "Invalid token", null);
+            }
 
-	@PostMapping("/user/{userId}/debit")
-	public CommonResult<Integer> debit(@PathVariable("userId") String userId, BigDecimal amount) {
-	    try {
-	        int ret = virtualWalletService.debit(userId, amount);
-	        if (ret == 0)
-	            return new CommonResult<Integer>(422, "消费失败.", ret);
-	        else
-	            return new CommonResult<Integer>(200, "消费成功.", ret);
-	    } catch (Exception e) {
-	        return new CommonResult<Integer>(500, "消费过程中出现异常: " + e.getMessage(), null);
-	    }
-	}
+            return new CommonResult<>(200, "success", walletService.getVirtualWallet(userId));
+        } catch (Exception e) {
+            return new CommonResult<>(500, e.getMessage(), null);
+        }
+    }
 
-	@PostMapping("/transfer")
-	public CommonResult<Integer> transfer(String fromUserId, String toUserId, BigDecimal amount) {
-	    try {
-	        int ret = virtualWalletService.transfer(fromUserId, toUserId, amount);
-	        if (ret == 0)
-	            return new CommonResult<Integer>(422, "转账失败.", ret);
-	        else
-	            return new CommonResult<Integer>(200, "转账成功.", ret);
-	    } catch (Exception e) {
-	        return new CommonResult<Integer>(500, "转账过程中出现异常: " + e.getMessage(), null);
-	    }
-	}
+    private String getUserIdFromToken(String token) {
+        try {
+            // 简单的JWT解析，提取userId（subject）
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) return null;
 
-	
-	
-	
+            String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+            // 简单解析，实际应使用JWT库
+            if (payload.contains("\"sub\":\"")) {
+                int start = payload.indexOf("\"sub\":\"") + 7;
+                int end = payload.indexOf("\"", start);
+                if (end > start) {
+                    return payload.substring(start, end);
+                }
+            }
+        } catch (Exception e) {
+            // 忽略解析错误
+        }
+        return null;
+    }
+
+    @GetMapping("/getBalance")
+    public CommonResult<BigDecimal> getBalance(@RequestParam("userId") String userId) {
+        return new CommonResult<>(200, "success", walletService.getBalance(userId));
+    }
+
+    @PostMapping("/recharge")
+    public CommonResult<Boolean> recharge(@RequestParam("userId") String userId,
+            @RequestParam("amount") BigDecimal amount) {
+        return new CommonResult<>(200, "success", walletService.recharge(userId, amount));
+    }
+
+    @PostMapping("/pay")
+    public CommonResult<Boolean> pay(@RequestParam("userId") String userId, @RequestParam("amount") BigDecimal amount) {
+        try {
+            return new CommonResult<>(200, "success", walletService.pay(userId, amount));
+        } catch (Exception e) {
+            return new CommonResult<>(500, e.getMessage(), false);
+        }
+    }
+
+    @PostMapping("/transfer")
+    public CommonResult<Integer> transfer(@RequestParam("fromUserId") String fromUserId,
+            @RequestParam("toUserId") String toUserId,
+            @RequestParam("amount") BigDecimal amount) {
+        try {
+            return new CommonResult<>(200, "success", walletService.transfer(fromUserId, toUserId, amount));
+        } catch (Exception e) {
+            return new CommonResult<>(500, e.getMessage(), 0);
+        }
+    }
+
+    @PostMapping("/repayOverdraft")
+    public CommonResult<Boolean> repayOverdraft(@RequestParam("userId") String userId,
+            @RequestParam("amount") BigDecimal amount) {
+        return new CommonResult<>(200, "success", walletService.repayOverdraft(userId, amount));
+    }
+
+    @PostMapping("/freezeFunds")
+    public CommonResult<Integer> freezeFunds(@RequestParam("orderId") Integer orderId,
+            @RequestParam("userId") String userId,
+            @RequestParam("businessUserId") String businessUserId,
+            @RequestParam("amount") BigDecimal amount) {
+        try {
+            return new CommonResult<>(200, "success", walletService.freezeFunds(orderId, userId, businessUserId, amount));
+        } catch (Exception e) {
+            return new CommonResult<>(500, e.getMessage(), 0);
+        }
+    }
+
+    @PostMapping("/releaseFrozenFunds")
+    public CommonResult<Integer> releaseFrozenFunds(@RequestParam("orderId") Integer orderId) {
+        try {
+            return new CommonResult<>(200, "success", walletService.releaseFrozenFunds(orderId));
+        } catch (Exception e) {
+            return new CommonResult<>(500, e.getMessage(), 0);
+        }
+    }
+
+    @GetMapping("/getVirtualWallet")
+    public CommonResult<VirtualWalletPO> getVirtualWallet(@RequestParam("userId") String userId) {
+        return new CommonResult<>(200, "success", walletService.getVirtualWallet(userId));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public CommonResult<?> handleIllegalArgumentException(IllegalArgumentException e) {
+        if ("The user does not exist".equals(e.getMessage())) {
+            return new CommonResult<>(404, "The user does not exist", null);
+        }
+        return new CommonResult<>(500, e.getMessage(), null);
+    }
 }

@@ -1,0 +1,115 @@
+% !Mode:: "TeX:UTF-8"
+
+\chapter{基于Spring Cloud Gateway的微服务网关}
+
+\section{设计原理}
+
+Spring Cloud Gateway是Spring官方基于Spring WebFlux构建的API网关，采用非阻塞I/O（Netty），能以少量线程处理大量并发连接。其核心组件包括：
+
+\begin{itemize}
+	\item \textbf{Route（路由）}：网关的基本构建块，包含ID、目标URI、Predicate集合和Filter集合
+	\item \textbf{Predicate（断言）}：基于Java 8的Predicate，匹配HTTP请求的路径、Header、参数等属性
+	\item \textbf{Filter（过滤器）}：对请求/响应进行处理，分为GatewayFilter和GlobalFilter
+\end{itemize}
+
+\section{Gateway路由设计}
+
+项目共配置了15条路由规则，每个业务微服务对应两条路由——一条匹配直接路径，另一条匹配\verb|/api/|前缀路径：
+
+\begin{table}[H]
+	\centering
+	\caption{Gateway路由规则一览}
+	\begin{tabular}{p{4.0cm}p{4.5cm}p{4.0cm}}
+		\hline
+		\textbf{路由ID} & \textbf{路径匹配} & \textbf{目标服务} \\
+		\hline
+		userServer / userApiServer & /users/**, /api/auth... & user-server \\
+		businessServer / businessApiServer & /businesses/**, /api/businesses/** & business-server \\
+		cartServer / cartApiServer & /carts/**, /api/carts/** & cart-server \\
+		deliveryServer / deliveryApiServer & /delivery-addresses/** & delivery-server \\
+		ordersServer / ordersApiServer & /orders/**, /api/orders/** & order-server \\
+		pointServer / pointApiServer & /points/**, /api/points/** & point-server \\
+		foodServer / foodApiServer & /foods/**, /api/foods/** & food-server \\
+		walletServer / walletApiServer & /wallet/**, /api/wallet/** & wallet-server \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\verb|/api/|前缀路由使用RewritePath过滤器去除前缀：前端请求\verb|GET /api/businesses/1|，网关将其重写为\verb|/businesses/1|后转发到后端。
+
+\begin{lstlisting}[language=Java, caption=路径重写过滤器]
+filters:
+  - RewritePath=/api/(?<segment>.*), /${segment}
+\end{lstlisting}
+
+\section{全局配置}
+
+\begin{lstlisting}[language=Java, caption=CORS与超时配置]
+spring:
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 20000    # 连接超时20秒
+        response-timeout: 20s     # 响应超时20秒
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedHeaders: "*"
+            allowedMethods: "*"
+\end{lstlisting}
+
+\section{自定义缓存过滤器（项目特色）}
+
+\subsection{设计动机}
+
+商家列表包含图片信息，每个约200KB，在远程部署环境下每次获取需要约4秒。然而商家信息变化概率很小，但读取请求非常频繁。基于"读多写少"的特点，我们在网关层为商家和食品的GET请求实现了缓存机制。
+
+\subsection{实现方案}
+
+缓存机制通过自定义GatewayFilter实现：
+
+\begin{lstlisting}[language=Java, caption=BusinessCacheGet过滤器]
+@Component
+public class BusinessCacheGetGatewayFilterFactory
+        extends AbstractGatewayFilterFactory<Object> {
+    private static final String PATH_PATTERN = "businesses/(\\d+)";
+
+    @Override
+    public GatewayFilter apply(Object config) {
+        return (exchange, chain) -> {
+            String path = exchange.getRequest().getURI().getPath();
+            Matcher matcher = Pattern.compile(PATH_PATTERN).matcher(path);
+            if (matcher.find()) {
+                Integer businessId = Integer.valueOf(matcher.group(1));
+                if (BusinessCache.businessMap.containsKey(businessId)) {
+                    // 缓存命中，直接从网关返回
+                    return exchange.getResponse().writeWith(
+                        Mono.just(exchange.getResponse().bufferFactory()
+                            .wrap(BusinessCache.businessMap
+                                .get(businessId).getBytes()))
+                    );
+                }
+            }
+            return chain.filter(exchange); // 未命中，继续转发
+        };
+    }
+}
+\end{lstlisting}
+
+\subsection{缓存策略}
+
+\begin{table}[H]
+	\centering
+	\caption{网关缓存策略}
+	\begin{tabular}{p{5.0cm}p{10.0cm}}
+		\hline
+		\textbf{请求类型} & \textbf{缓存行为} \\
+		\hline
+		GET 单个商家/食品 & 未命中→转发后端→Post过滤器缓存响应；命中→直接从网关返回 \\
+		PUT/POST/DELETE & 修改操作触发时清除本地对应缓存条目 \\
+		\hline
+	\end{tabular}
+\end{table}
+
+此设计将重复GET请求的响应时间从秒级（需经过完整网络链路）降至毫秒级（网关内存操作）。

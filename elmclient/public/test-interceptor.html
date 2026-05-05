@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>测试axios拦截器</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .response { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>axios拦截器测试</h1>
+    <div id="result"></div>
+    
+    <script>
+    // 设置baseURL
+    axios.defaults.baseURL = 'http://localhost:14000/';
+    
+    // 模拟main.js中的拦截器
+    axios.interceptors.response.use(
+        response => {
+            const data = response.data;
+            if (data && typeof data === 'object' && 'code' in data && 'result' in data && !('id_token' in data)) {
+                const success = data.code === 200;
+                return {
+                    ...response,
+                    data: {
+                        success: success,
+                        data: data.result,
+                        message: data.message
+                    }
+                };
+            }
+            return response;
+        },
+        error => {
+            console.error('API Error:', error);
+            return Promise.reject(error);
+        }
+    );
+    
+    // 测试登录接口
+    axios.post('/api/auth', {
+        username: 'admin',
+        password: '123'
+    }).then(response => {
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML += '<h2>1. 登录接口测试</h2>';
+        resultDiv.innerHTML += '<div class="response">原始响应: ' + JSON.stringify(response.data) + '</div>';
+        
+        if (response.data.id_token) {
+            resultDiv.innerHTML += '<p class="success">✅ 登录成功，获取到token</p>';
+            
+            // 测试用户信息接口
+            return axios.get('/api/user', {
+                headers: { 'Authorization': 'Bearer ' + response.data.id_token }
+            });
+        } else {
+            throw new Error('登录失败：未获取到token');
+        }
+    }).then(response => {
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML += '<h2>2. 用户信息接口测试</h2>';
+        resultDiv.innerHTML += '<div class="response">拦截器转换后: ' + JSON.stringify(response.data) + '</div>';
+        
+        if (response.data.success && response.data.data.authorities) {
+            resultDiv.innerHTML += '<p class="success">✅ 拦截器工作正常！用户权限: ' + 
+                JSON.stringify(response.data.data.authorities) + '</p>';
+            resultDiv.innerHTML += '<h2 class="success">🎉 所有测试通过！前端可以正常登录了。</h2>';
+        } else {
+            resultDiv.innerHTML += '<p class="error">❌ 拦截器转换失败</p>';
+        }
+    }).catch(error => {
+        document.getElementById('result').innerHTML += '<p class="error">错误: ' + error.message + '</p>';
+    });
+    </script>
+</body>
+</html>

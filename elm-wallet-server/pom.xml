@@ -1,21 +1,19 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>team.tjusw</groupId>
-    <artifactId>elm_perent</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-  </parent>
-  <artifactId>elm-wallet-server</artifactId>
-  
-    
-  <dependencies>
-  <!-- boot -->
+﻿<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>team.tjusw</groupId>
+		<artifactId>elm_perent</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+	<dependencies>
+		<!-- boot -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		
-		<!-- 热部署 -->
+		<!-- 鐑儴缃?-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
@@ -29,7 +27,7 @@
 			<artifactId>spring-cloud-starter-config</artifactId>
 		</dependency>
 		
-		 <!-- 消息总线-->
+		 <!-- 娑堟伅鎬荤嚎-->
 	  <dependency>
 		  <groupId>org.springframework.cloud</groupId>
 		  <artifactId>spring-cloud-bus</artifactId>
@@ -41,13 +39,13 @@
 		  <artifactId>spring-cloud-stream-binder-rabbit</artifactId>
 	  </dependency>
 	  
-	  <!-- 监听依赖-->
+	  <!-- 鐩戝惉渚濊禆-->
 	  <dependency>
 		  <groupId>org.springframework.boot</groupId>
 		  <artifactId>spring-boot-starter-actuator</artifactId>
 	  </dependency>
 		
-		<!-- 新版本中必须添加这个依赖才会从bottstrap.yml读取配置-->
+		<!-- 鏂扮増鏈腑蹇呴』娣诲姞杩欎釜渚濊禆鎵嶄細浠巄ottstrap.yml璇诲彇閰嶇疆-->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-bootstrap</artifactId>
@@ -59,11 +57,24 @@
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 		
+		<!-- OpenFeign -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
+		</dependency>
+		
+		<!-- Redisson -->
+		<dependency>
+			<groupId>org.redisson</groupId>
+			<artifactId>redisson</artifactId>
+			<version>3.16.8</version>
+		</dependency>
+		
 		<!-- Mybatis-->
 		<dependency>
 			<groupId>org.mybatis.spring.boot</groupId>
 			<artifactId>mybatis-spring-boot-starter</artifactId>
-			<version>3.0.1</version>
+			<version>2.2.2</version>
 		</dependency>
 		
 		<!-- JDBC-->
@@ -73,23 +84,11 @@
 			<scope>runtime</scope>
 		</dependency>
 		
-		<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-data-redis</artifactId>
-</dependency>
-
-
-
-
-<dependency>
-    <groupId>org.redisson</groupId>
-    <artifactId>redisson</artifactId>
-    <version>3.16.4</version>
-</dependency>
-
-	</dependencies>
-		
-  
-  
-  
+	        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+	<artifactId>elm_wallet_server</artifactId>
 </project>

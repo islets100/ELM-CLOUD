@@ -1,0 +1,96 @@
+% !Mode:: "TeX:UTF-8"
+
+\chapter{集中配置管理与配置刷新}
+
+\section{基于Spring Cloud Config的集中配置管理}
+
+\subsection{设计原理}
+
+在微服务架构中，每个服务都有自己的配置文件。当服务数量增多时，分散的配置文件难以管理和维护。Spring Cloud Config提供Server-Client模式的集中配置管理方案：
+
+\begin{itemize}
+	\item \textbf{Config Server}：从Git仓库或本地文件系统读取配置文件，通过REST API对外暴露
+	\item \textbf{Config Client}：启动时从Config Server拉取配置，再初始化自己的Spring上下文
+\end{itemize}
+
+\subsection{Config Server实现}
+
+本项目Config Server使用native模式（本地文件系统），配置文件存储在\verb|elm-configs/|目录下：
+
+\begin{lstlisting}[language=Java, caption=Config Server配置]
+server:
+  port: 15001
+spring:
+  profiles:
+    active: native
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: file:///E:/ELM-CLOUD/elm-configs
+\end{lstlisting}
+
+配置文件以\verb|{application-name}-{profile}.yml|格式命名，包括所有8个业务微服务和网关的配置。
+
+\subsection{Config Client配置}
+
+各微服务通过bootstrap.yml从Config Server拉取配置：
+
+\begin{lstlisting}[language=Java, caption=Config Client bootstrap.yml]
+spring:
+  cloud:
+    config:
+      name: elm-user-server-1    # 配置文件名称
+      profile: dev                # 环境
+      label: elm-configs          # 标签
+      uri: http://localhost:15001 # Config Server地址
+\end{lstlisting}
+
+\subsection{参数化配置}
+
+配置文件中使用环境变量占位符，支持不同环境灵活配置：
+
+\begin{lstlisting}[language=Java, caption=参数化配置示例]
+spring:
+  datasource:
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:123456}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:elm2}
+\end{lstlisting}
+
+\subsection{Gateway路由外部化}
+
+Gateway的全部15条路由规则均存储在Config Server中，而非Gateway本地配置文件。这样可以在不重启Gateway的情况下，通过配置刷新机制更新路由规则。
+
+\section{基于Spring Cloud Bus的配置刷新}
+
+\subsection{设计原理}
+
+当Config Server中的配置发生变化时，需要通知各微服务刷新配置。Spring Cloud Bus利用RabbitMQ等消息中间件作为通信总线，实现配置变更的广播通知：管理员发送POST请求到Config Server的\verb|/actuator/busrefresh|端点，Config Server通过RabbitMQ广播\verb|RefreshRemoteApplicationEvent|事件，所有订阅了该事件的微服务收到通知后重新从Config Server拉取最新配置。
+
+\subsection{项目实施}
+
+Config Server暴露busrefresh端点：
+
+\begin{lstlisting}[language=Java, caption=暴露busrefresh端点]
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - busrefresh
+\end{lstlisting}
+
+各微服务依赖spring-cloud-bus和spring-cloud-stream-binder-rabbit以订阅配置变更事件。
+
+配置刷新流程：
+\begin{enumerate}
+	\item 管理员修改Config Server中的配置文件
+	\item 发送POST请求到\verb|http://config-server:15001/actuator/busrefresh|
+	\item Config Server通过RabbitMQ广播刷新事件
+	\item 所有订阅了该事件的微服务收到通知
+	\item 各微服务重新从Config Server拉取最新配置
+	\item 标注了\verb|@RefreshScope|的Bean自动重建
+\end{enumerate}
+
+这种机制避免了对每个微服务逐一发送刷新请求的繁琐操作，只需一次触发即可刷新所有服务。

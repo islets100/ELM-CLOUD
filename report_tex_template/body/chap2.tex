@@ -1,0 +1,137 @@
+% !Mode:: "TeX:UTF-8"
+
+\chapter{项目架构设计}
+
+\section{总体架构}
+
+系统采用五层架构设计，自顶向下分为：前端层、网关层、业务层、数据访问层和基础设施层。
+
+\subsection{前端层}
+
+前端层使用Vue.js 3框架构建单页面应用（SPA），结合Element Plus组件库提供用户界面。前端通过Axios HTTP客户端向网关统一入口发起请求，使用Vue Router管理路由，ECharts实现数据可视化。前端开发服务器运行在端口8081，生产环境通过Nginx部署。
+
+\subsection{网关层}
+
+网关层基于Spring Cloud Gateway构建，作为系统的唯一入口，负责以下核心职责：
+\begin{itemize}
+	\item 请求路由：根据请求路径将请求转发到对应的微服务
+	\item 负载均衡：通过Spring Cloud LoadBalancer实现客户端负载均衡
+	\item 熔断降级：基于Resilience4j为每个后端服务配置独立的熔断器
+	\item 自定义缓存：为商家和食品的GET请求实现网关级响应缓存
+	\item 全局CORS：配置跨域资源共享策略
+\end{itemize}
+
+\subsection{业务层}
+
+业务层包含8个独立微服务，按业务域垂直拆分。每个微服务独立部署、独立扩展，拥有独立的数据库。微服务之间通过以下两种方式通信：
+\begin{itemize}
+	\item 同步调用：通过OpenFeign声明式HTTP客户端进行同步的服务间调用
+	\item 异步消息：通过RabbitMQ消息队列进行异步的订单状态变更通知
+\end{itemize}
+
+\subsection{数据访问层}
+
+数据访问层包含MySQL和Redis两种数据存储：
+\begin{itemize}
+	\item MySQL 8.0：存储各业务域的持久化数据，每个微服务使用独立数据库
+	\item Redis 6.2：通过Redisson客户端实现分布式锁，保障金钱交易的一致性
+\end{itemize}
+
+\subsection{基础设施层}
+
+基础设施层为整个微服务架构提供支撑能力：
+\begin{itemize}
+	\item Eureka Server：服务注册与发现中心
+	\item Spring Cloud Config Server：集中配置管理
+	\item RabbitMQ：消息中间件，支持Spring Cloud Bus配置刷新和异步消息通信
+	\item Docker Compose：容器化部署MySQL、Redis、RabbitMQ
+\end{itemize}
+
+\section{技术选型}
+
+系统技术栈的选择遵循以下原则：使用业界成熟的微服务框架、优先采用Spring Cloud生态组件、保证技术栈的一致性和可维护性。
+
+\begin{table}[H]
+	\centering
+	\caption{技术选型一览表}
+	\begin{tabular}{p{4.0cm}p{5.0cm}p{5.0cm}}
+		\hline
+		\textbf{层面} & \textbf{技术} & \textbf{版本} \\
+		\hline
+		开发框架 & Spring Boot & 2.4.5 \\
+		微服务框架 & Spring Cloud & 2020.0.2 \\
+		服务注册与发现 & Netflix Eureka & -- \\
+		配置中心 & Spring Cloud Config & -- \\
+		API网关 & Spring Cloud Gateway & -- \\
+		服务间调用 & OpenFeign & -- \\
+		客户端负载均衡 & Spring Cloud LoadBalancer & -- \\
+		熔断降级 & Resilience4j & -- \\
+		配置刷新总线 & Spring Cloud Bus & -- \\
+		消息队列 & RabbitMQ & 3.13 \\
+		数据库 & MySQL & 8.0.36 \\
+		缓存/分布式锁 & Redis + Redisson & 6.2.14 / 3.16.8 \\
+		认证授权 & JWT (jjwt) & 0.11.5 \\
+		前端框架 & Vue 3 + Element Plus & -- \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\section{模块划分与服务端口}
+
+系统共包含11个独立部署的模块，每个模块有明确的职责和固定的端口分配。
+
+\begin{table}[H]
+	\centering
+	\caption{模块划分与服务端口}
+	\begin{tabular}{p{5.5cm}p{2.5cm}p{6.0cm}}
+		\hline
+		\textbf{模块名称} & \textbf{端口} & \textbf{职责} \\
+		\hline
+		elm-eureka-server & 13000 & 服务注册中心 \\
+		elm-config-server & 15001 & 集中配置管理 \\
+		elm-gateway-server & 14000 & API网关 \\
+		elm-user-server & 10100 & 用户管理与JWT认证 \\
+		elm-business-server & 10400 & 商家管理与订单生命周期 \\
+		elm-food-server & 10200 & 食品管理 \\
+		elm-cart-server & 10300 & 购物车管理 \\
+		elm-order-server & 11000 & 订单创建与支付 \\
+		elm-delivery-server & 10500 & 配送地址管理 \\
+		elm-wallet-server & 18000 & 虚拟钱包与VIP \\
+		elm-point-server & 15008 & 积分与促销活动 \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\section{微服务依赖关系}
+
+系统严格遵循无循环依赖原则，服务间的依赖方向为单向。订单服务是系统中依赖最多的节点，它通过Feign客户端分别调用购物车服务、钱包服务、积分服务和商家服务。食品服务通过Feign调用商家服务以验证商家是否存在。钱包服务通过Feign调用用户服务以验证用户身份。所有Feign调用方向均为单向，严格避免了循环依赖。
+
+异步通信方面：商家服务在订单状态变更时通过RabbitMQ发出消息，购物车服务订阅该消息，实现解耦的异步通知。
+
+\section{RESTful API设计规范}
+
+本项目对所有业务接口进行了RESTful规范化重构，核心思想是将数据库表项视为"资源"，URL表示资源路径，HTTP方法表示对资源的操作。
+
+与教学视频中混用动词短语和路径参数的接口设计不同，我们严格遵循以下规范：
+
+\begin{itemize}
+	\item 使用复数名词表示资源集合：\verb|/businesses|、\verb|/foods|、\verb|/orders|
+	\item 使用HTTP方法表达操作语义：GET（获取）、POST（创建）、PUT（更新）、DELETE（删除）
+	\item 通过路径参数标识具体资源：\verb|/businesses/{businessId}|
+	\item 通过查询参数传递筛选条件：\verb|/foods?businessId={id}|
+	\item 统一响应格式：\verb|CommonResult(code, message, result)|
+\end{itemize}
+
+团队为此编写了《RESTful API接口规格说明书》，详细规定了每个接口的请求方法、资源路径格式、请求参数、响应格式和错误码语义。这为前后端并行开发提供了契约基础——前端开发人员只需依据接口文档即可进行开发，无需等待后端接口完成。
+
+\section{业务对象设计优化}
+
+\subsection{金额类型优化}
+
+教学视频中商品价格、配送费等金额属性使用了\verb|double|类型。然而\verb|float|和\verb|double|类型的尾数位数固定，对于需要精确表示的小数（如0.10元），\verb|double|类型无法精确表示，这在金融数据处理中是绝对不允许的。本项目将所有金额相关的属性统一替换为\verb|BigDecimal|类型，确保金额运算的精度。
+
+\subsection{对象关联方式优化}
+
+教学视频中业务对象之间存在直接嵌套关系：Order对象中包含Business对象和Cart列表，Cart中包含Food对象，Food中又包含Business对象。这种深度嵌套导致一个订单的响应体动辄数MB（因为包含多张Base64编码的图片），在远程部署环境下单个请求耗时可达5-8秒。
+
+本项目将对象之间的关联改为通过主键引用：Order存储businessId和foodId列表，Cart存储foodId，Food存储businessId。这一重构将订单响应大小从MB级降至KB级，显著提升了响应速度，同时降低了微服务之间的耦合度。

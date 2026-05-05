@@ -8,12 +8,14 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Component
 public class BusinessCacheGetGatewayFilterFactory extends AbstractGatewayFilterFactory<Object> {
     private static final String PATH_PATTERN = "businesses/(\\d+)";
+    private static final MediaType UTF8_JSON = MediaType.parseMediaType("application/json;charset=UTF-8");
 
     @Override
     public GatewayFilter apply(Object config) {
@@ -29,10 +31,10 @@ public class BusinessCacheGetGatewayFilterFactory extends AbstractGatewayFilterF
                 if (BusinessCache.businessMap.containsKey(businessId)) {
                 	if(CacheConfiguration.cache_log)
                 		CacheConfiguration.log_cached("商家");
-                	exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+                	exchange.getResponse().getHeaders().setContentType(UTF8_JSON);
                     return exchange.getResponse().writeWith(Mono.just(
                             exchange.getResponse().bufferFactory().wrap(
-                                    BusinessCache.businessMap.get(businessId).getBytes()
+                                    BusinessCache.businessMap.get(businessId).getBytes(StandardCharsets.UTF_8)
                             )
                     )).doOnNext(__ -> exchange.getResponse().setStatusCode(HttpStatus.OK));
                 }

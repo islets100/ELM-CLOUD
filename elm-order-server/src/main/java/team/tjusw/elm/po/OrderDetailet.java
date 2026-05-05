@@ -1,6 +1,9 @@
 package team.tjusw.elm.po;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class OrderDetailet {
+	@JsonProperty("id")
 	private Integer odId;
 	private Integer orderId;
 	private Integer foodId;

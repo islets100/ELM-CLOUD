@@ -1,0 +1,64 @@
+# =========================
+# Global ignore for ELM-CLOUD
+# =========================
+
+# Maven / Java build outputs
+**/target/
+**/out/
+**/bin/
+
+# Java / Eclipse project files
+**/.settings/
+**/.classpath
+**/.project
+**/.factorypath
+
+# IntelliJ
+**/.idea/
+**/*.iml
+
+# VS Code local workspace state
+**/.vscode/
+**/.vscode/*.code-workspace
+
+# Codex local artifacts
+.codex/
+.codex-logs/
+
+# Scratch files
+Untitled-*
+
+# Runtime logs and crash dumps
+**/*.log
+**/hs_err_pid*.log
+**/replay_pid*.log
+
+# Environment files
+.env
+**/.env
+
+# Keep template env files tracked
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# LaTeX build artifacts
+**/*.aux
+**/*.out
+**/*.toc
+**/*.fls
+**/*.fdb_latexmk
+**/*.synctex*
+**/*.xdv
+**/*.thm
+
+# Generated PDFs (but keep source figure PDFs for LaTeX)
+*.pdf
+!report_tex_template/figures/*.pdf
+!report_tex_template/tjumain.pdf
+
+# Docker local data volumes
+docker/mysql/data/
+docker/redis/data/

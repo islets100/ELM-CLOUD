@@ -11,6 +11,13 @@
 		<result column="quantity" property="quantity" />
 	</resultMap>
 	
+	<insert id="insertCart" parameterType="team.tjusw.elm.po.Cart">
+		insert into cart (foodId, businessId, userId, quantity) values (#{foodId}, #{businessId}, #{userId}, #{quantity})
+	</insert>
+
+	<update id="updateCart" parameterType="team.tjusw.elm.po.Cart">
+		update cart set quantity=#{quantity} where userId=#{userId} and businessId=#{businessId} and foodId=#{foodId}
+	</update>
 
 	<select id="listCart" parameterType="team.tjusw.elm.po.Cart"
 		resultMap="cartResultMap">

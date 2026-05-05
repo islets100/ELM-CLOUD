@@ -21,7 +21,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import team.tjusw.util.CommonUtil;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,6 +31,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.O
 @Component
 public class ResponseCachingFilter implements GlobalFilter, Ordered {
     private static Joiner joiner = Joiner.on("");
+    private static final MediaType UTF8_JSON = MediaType.parseMediaType("application/json;charset=UTF-8");
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -64,12 +65,13 @@ public class ResponseCachingFilter implements GlobalFilter, Ordered {
                                 byte[] content = new byte[dataBuffer.readableByteCount()];
                                 dataBuffer.read(content);
                                 DataBufferUtils.release(dataBuffer);
-                                list.add(new String(content, Charset.forName("UTF-8")));
+                                list.add(new String(content, StandardCharsets.UTF_8));
                             });
                             String responseData = joiner.join(list);
                             caching(exchange.getRequest(), responseData);
                             //log.info("<------------------------ RESPONSE RESULT = [{}]", responseData.replaceAll("\n","").replaceAll("\t",""));
-                            return bufferFactory.wrap(responseData.getBytes());
+                            getDelegate().getHeaders().setContentType(UTF8_JSON);
+                            return bufferFactory.wrap(responseData.getBytes(StandardCharsets.UTF_8));
                         }));
                     }
                 }

@@ -1,14 +1,14 @@
 package team.tjusw.elm.service;
-
 import java.math.BigDecimal;
-import java.util.List;
-
-import team.tjusw.elm.controller.vo.VirtualWalletDetailsVo;
+import team.tjusw.elm.po.VirtualWalletPO;
 
 public interface VirtualWalletService {
-	public BigDecimal getBalanceByUserId(String userId);
-	public List<VirtualWalletDetailsVo> getDetailsByUserId(String userId);
-	public Integer credit(String userId,BigDecimal amount);
-	public Integer debit(String userId,BigDecimal amount);
-	public Integer transfer(String fromUserId,String toUserId,BigDecimal amount);
+    VirtualWalletPO getVirtualWallet(String userId);
+    BigDecimal getBalance(String userId);
+    boolean recharge(String userId, BigDecimal amount);
+    boolean pay(String userId, BigDecimal amount);
+    int transfer(String fromUserId, String toUserId, BigDecimal amount);
+    int freezeFunds(Integer orderId, String userId, String businessUserId, BigDecimal amount);
+    int releaseFrozenFunds(Integer orderId);
+    boolean repayOverdraft(String userId, BigDecimal amount);
 }

@@ -16,14 +16,19 @@ public class RedissonConfig {
 	public RedissonClient redissonClient;
 	
 	public RedissonConfig(	@Value("${redisClientConfig.host}") String host,
-			 			   	@Value("${redisClientConfig.port}") Integer port,
-			 			    @Value("${redisClientConfig.timeout}") Integer  timeout)
+								@Value("${redisClientConfig.port}") Integer port,
+								@Value("${redisClientConfig.timeout}") Integer  timeout)
 	{ 
 		this.host = host;
 		this.port = port;
 		this.timeout = timeout; 
-	 	Config config = new Config(); 
-        config.useSingleServer().setAddress("redis://"+host+":"+port);
-        redissonClient =  Redisson.create(config);
+		try {
+		  Config config = new Config(); 
+	        config.useSingleServer().setAddress("redis://"+host+":"+port);
+	        redissonClient =  Redisson.create(config);
+		} catch (Exception e) {
+			System.out.println("Redis connection failed, continuing without Redis: " + e.getMessage());
+			redissonClient = null;
+		}
 	}
 }

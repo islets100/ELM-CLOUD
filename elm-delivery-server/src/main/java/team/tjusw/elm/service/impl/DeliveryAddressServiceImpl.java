@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import team.tjusw.elm.mapper.DeliveryAddressMapper;
 import team.tjusw.elm.po.DeliveryAddress;
@@ -15,12 +16,10 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
 	@Autowired
 	private DeliveryAddressMapper deliveryAddressMapper;
 
-
 	@Override
 	public int saveDeliveryAddress(DeliveryAddress deliveryAddress) {
 		return deliveryAddressMapper.saveDeliveryAddress(deliveryAddress);
 	}
-	
 	
 	@Override
 	public DeliveryAddress getDeliveryAddressById(Integer daId) {
@@ -28,8 +27,13 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
 	}
 	
 	@Override
+	@Transactional
 	public int updateDeliveryAddress(DeliveryAddress deliveryAddress) {
-		return deliveryAddressMapper.updateDeliveryAddress(deliveryAddress);
+		int updated = deliveryAddressMapper.updateDeliveryAddress(deliveryAddress);
+		if (updated == 0) {
+			return 0;
+		}
+		return deliveryAddressMapper.saveDeliveryAddress(deliveryAddress);
 	}
 	
 	@Override
@@ -37,18 +41,8 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
 		return deliveryAddressMapper.listDeliveryAddressByUserId(userId);
 	}
 
-	
-	
-
 	@Override
 	public int removeDeliveryAddress(Integer daId) {
 		return deliveryAddressMapper.removeDeliveryAddress(daId);
 	}
-	
-	
-	
-
-
-	
-
 }

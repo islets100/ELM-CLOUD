@@ -1,0 +1,78 @@
+% !Mode:: "TeX:UTF-8"
+
+\chapter{基于Eureka的服务注册与发现及高可用集群}
+
+\section{Eureka服务注册与发现}
+
+\subsection{设计原理}
+
+Eureka是Netflix开源的服务注册与发现组件，采用AP架构（可用性 + 分区容错性），是Spring Cloud微服务治理的核心组件。Eureka包含两个核心角色：
+
+\begin{itemize}
+	\item \textbf{Eureka Server（服务注册中心）}：维护所有已注册服务实例的注册表，接收客户端的注册请求和心跳续约，通过REST API对外暴露服务列表
+	\item \textbf{Eureka Client（服务客户端）}：启动时向Server注册自身信息，定期发送心跳以维持租约，定期从Server拉取服务注册表到本地缓存
+\end{itemize}
+
+\subsection{Eureka Server实现}
+
+本项目的Eureka Server位于elm-eureka-server模块，启动类通过\verb|@EnableEurekaServer|注解启用服务注册中心功能。其核心配置如下：
+
+\begin{lstlisting}[language=Java, caption=Eureka Server配置]
+server:
+  port: 13000
+eureka:
+  instance:
+    hostname: 127.0.0.1
+  client:
+    register-with-eureka: false   # 不向自身注册
+    fetch-registry: false         # 不从自身拉取注册表
+    service-url:
+      defaultZone: http://${eurekahost2}:${server.port}/eureka/
+\end{lstlisting}
+
+关键配置说明：
+\begin{itemize}
+	\item \verb|register-with-eureka: false|：Eureka Server自身不需要被注册到注册中心
+	\item \verb|fetch-registry: false|：Eureka Server不需要从自身拉取服务列表
+	\item \verb|defaultZone| 配置了同伴节点的地址，为Eureka集群做准备
+\end{itemize}
+
+\subsection{Eureka Client实现}
+
+所有业务微服务通过引入\verb|spring-cloud-starter-netflix-eureka-client|依赖并使用\verb|@EnableEurekaClient|注解，即可在启动时自动注册到Eureka Server。各微服务的bootstrap.yml中配置了Eureka Client参数：
+
+\begin{lstlisting}[language=Java, caption=Eureka Client配置]
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:13000/eureka/
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 5      # 心跳间隔5秒
+    lease-expiration-duration-in-seconds: 15  # 租约过期时间15秒
+\end{lstlisting}
+
+心跳机制保证服务实例的活性：客户端每5秒向Server发送一次心跳续约，若Server在15秒内未收到心跳，则将该实例从注册表中剔除。
+
+\section{Eureka高可用集群设计}
+
+\subsection{设计动机}
+
+单点Eureka Server存在单点故障风险：一旦该Server宕机，新服务无法注册，现有服务无法发现其他服务实例。虽然已拉取了注册表的客户端可以继续使用本地缓存进行服务调用，但系统的弹性将受到严重影响。
+
+\subsection{集群架构}
+
+Eureka通过Peer-to-Peer机制实现高可用。部署多个Eureka Server实例，它们互相注册形成对等关系。本项目配置了两个Eureka节点，通过\verb|defaultZone|互相指向对方实现集群：
+
+\begin{lstlisting}[language=Java, caption=Eureka集群Client配置]
+eureka:
+  client:
+    service-url:
+      defaultZone: http://host1:13000/eureka/,http://host2:13000/eureka/
+\end{lstlisting}
+
+各微服务同时向两个注册中心注册，即使一个Eureka Server宕机，微服务仍可从另一个Server获取服务注册表，保证了服务发现的高可用性。
+
+\subsection{自我保护机制}
+
+Eureka Server默认开启自我保护模式。当Server在短时间内丢失大量心跳续约时，会进入自我保护状态，不再剔除任何服务实例。这一设计避免因网络瞬时故障导致大量服务被错误剔除。本项目保留了此机制，以保证系统的健壮性。

@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS orders (
+    orderId INT AUTO_INCREMENT PRIMARY KEY,
+    userId VARCHAR(50) NOT NULL,
+    businessId INT NOT NULL,
+    orderDate VARCHAR(50),
+    orderTotal DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    daId INT,
+    orderState TINYINT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS orderDetailet (
+    odId INT AUTO_INCREMENT PRIMARY KEY,
+    orderId INT NOT NULL,
+    foodId INT NOT NULL,
+    quantity INT NOT NULL
+);

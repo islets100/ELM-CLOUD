@@ -1,0 +1,96 @@
+% !Mode:: "TeX:UTF-8"
+
+\chapter{延迟与容错：从Hystrix到Resilience4j}
+
+\section{设计原理}
+
+在微服务架构中，当某个服务出现故障或响应缓慢时，如果不加以控制，故障会通过调用链向上游传播，最终导致整个系统的"雪崩效应"。熔断器（Circuit Breaker）模式是预防雪崩效应的核心手段。
+
+熔断器有三种状态：
+\begin{description}
+	\item[CLOSED（闭合状态）] 所有请求正常通过。当失败率超过阈值时切换到OPEN
+	\item[OPEN（断开状态）] 请求直接失败（短路），执行降级逻辑。经过等待时间后切换到HALF\_OPEN
+	\item[HALF\_OPEN（半开状态）] 允许部分请求试探通过。成功则回到CLOSED，失败则回到OPEN
+\end{description}
+
+Hystrix是Netflix开源的传统熔断器组件，但在Spring Cloud 2020.0.2中已被移除。本项目使用Resilience4j作为替代方案，应用于Gateway网关层。
+
+\section{Gateway层熔断器配置}
+
+\begin{lstlisting}[language=Java, caption=CircuitBreakerConfig.java]
+@Configuration
+public class CircuitBreakerConfig {
+    @Bean
+    public ReactiveResilience4JCircuitBreakerFactory
+            reactiveResilience4JCircuitBreakerFactory() {
+        ReactiveResilience4JCircuitBreakerFactory factory =
+            new ReactiveResilience4JCircuitBreakerFactory();
+        TimeLimiterConfig timeLimiterConfig = TimeLimiterConfig.custom()
+                .timeoutDuration(Duration.ofSeconds(20))
+                .cancelRunningFuture(true)
+                .build();
+        factory.configure(
+            builder -> builder.timeLimiterConfig(timeLimiterConfig).build(),
+            "globalCircuitBreaker", "userCircuitBreaker",
+            "businessCircuitBreaker", "foodCircuitBreaker",
+            "cartCircuitBreaker", "orderCircuitBreaker",
+            "deliveryCircuitBreaker", "walletCircuitBreaker",
+            "pointCircuitBreaker"
+        );
+        return factory;
+    }
+}
+\end{lstlisting}
+
+设计要点：
+\begin{itemize}
+	\item \textbf{独立熔断器}：为9个服务分别创建独立的熔断器，确保某个服务熔断不影响其他服务
+	\item \textbf{统一超时}：所有熔断器配置20秒超时，超时后触发熔断
+	\item \textbf{取消运行中的Future}：\verb|cancelRunningFuture(true)|确保超时后释放线程资源
+\end{itemize}
+
+\section{路由中的熔断器集成}
+
+Gateway的每条路由规则都配置了CircuitBreaker过滤器和对应的降级处理地址：
+
+\begin{lstlisting}[language=Java, caption=路由中的熔断器配置]
+routes:
+  - id: userServer
+    uri: lb://elm-user-server
+    filters:
+      - name: CircuitBreaker
+        args:
+          name: userCircuitBreaker
+          fallbackUri: forward:/userFallback
+\end{lstlisting}
+
+\section{降级响应设计}
+
+FallbackController为每个微服务定义降级处理方法：
+
+\begin{lstlisting}[language=Java, caption=FallbackController降级响应]
+@RequestMapping("/userFallback")
+@ResponseStatus(HttpStatus.FORBIDDEN)
+public CommonResult<Map<String, Object>> userFallback(
+        ServerWebExchange exchange) {
+    Map<String, Object> metadata = new LinkedHashMap<>();
+    metadata.put("fallback", true);      // 标记为熔断响应
+    metadata.put("service", "user");     // 标识故障服务
+    metadata.put("retryable", true);     // 标记可重试
+    metadata.put("path", exchange.getRequest().getURI().getRawPath());
+    return new CommonResult<>(403,
+        "Gateway触发了用户微服务的熔断降级方法.", metadata);
+}
+\end{lstlisting}
+
+降级响应携带丰富元数据：\verb|fallback: true|让前端判断这是熔断响应而非业务错误；\verb|retryable: true|提示可重试；\verb|path|和\verb|method|记录原始请求信息便于排查。
+
+\section{容错机制分层总结}
+
+系统的容错机制分为两层：
+\begin{enumerate}
+	\item \textbf{Gateway层熔断（Resilience4j）}：超时20秒触发，返回FallbackController降级响应，HTTP状态码403
+	\item \textbf{Feign层降级（Fallback实现类）}：当目标微服务不可达时，调用Fallback方法返回兜底数据
+\end{enumerate}
+
+两层容错互为补充：Gateway层保障外部请求的可用性，Feign层保障内部服务间调用的鲁棒性。
